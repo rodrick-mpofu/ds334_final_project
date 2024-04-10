@@ -31,7 +31,8 @@ The dataset contains the following variables:
 - `Government: Independence`: The date of independence of the country.
 - `Government: National holiday`: The national holiday of the country.
 - `Government: Constitution`: The date of the constitution of the country.
-- `Government: Legal system`: The legal system of the country.    
+- `Government: Legal system`: The legal system of the country.
+
 
 
 # Data Exploration
@@ -43,7 +44,10 @@ head(countries)
 
 
 ```{r}
-ggplot(countries, aes(x = `Geography: Map references`, 
+
+countries |>
+  mutate(`Geography: Map references` = as.factor(`Geography: Map references`)) |>
+  ggplot(aes(x = `Geography: Map references`, 
                       fill = `Geography: Map references`)) +
   geom_bar() +
   labs(title = "Number of Countries by Continent",
@@ -55,7 +59,12 @@ ggplot(countries, aes(x = `Geography: Map references`,
 ```
 
 ```{r}
-ggplot(countries, aes(x = `Geography: Map references`, 
+# Extract digits from the `Geography: Area - total` column
+
+countries |>
+  mutate(`Geography: Area - total` = 
+           as.numeric(str_extract(`Geography: Area - total`, "[0-9]+"))) |>
+  ggplot(aes(x = `Geography: Map references`, 
                       y = `Geography: Area - total`, 
                       fill = `Geography: Map references`)) +
   geom_boxplot() +
@@ -68,7 +77,14 @@ ggplot(countries, aes(x = `Geography: Map references`,
 ```
 
 ```{r}
+# Extract digits from the `Economy: Real GDP per capita` column
 
+countries |>
+  mutate(`Economy: Real GDP per capita` = 
+           str_split(`Economy: Real GDP per capita`, " ")) |>
+  select(`Economy: Real GDP per capita`)
+  
+  
 ggplot(countries, aes(x = `Geography: Map references`, 
                       y = `Economy: Real GDP per capita`, 
                       fill = `Geography: Map references`)) +
@@ -131,11 +147,64 @@ ggplot(countries, aes(x = `Economy: Real GDP per capita`,
 
 ```
 
-# heatmap
+```{r}
+ggplot(countries, aes(x = `People and Society: Population`, 
+                      y = `Geography: Area - total`, 
+                      color = `Geography: Map references`)) +
+  geom_point() +
+  labs(title = "Area vs Population",
+       x = "Population",
+       y = "Area (sq km)") +
+  theme_minimal()
+
+```
+
+```{r}
+
+countries |>
+  mutate(`Government: Government type` = as.factor(`Government: Government type`)) |>
+  ggplot(aes(x = `Government: Government type`, 
+                      fill = `Government: Government type`)) +
+  geom_bar() +
+  labs(title = "Number of Countries by Government Type",
+       x = "Government Type",
+       y = "Number of Countries") +
+  theme_minimal() +
+  coord_flip()
+
+```
+
+```{r}
+
+countries |>
+  mutate(`Government: Legal system` = as.factor(`Government: Legal system`)) |>
+  ggplot(aes(x = `Government: Legal system`, 
+                      fill = `Government: Legal system`)) +
+  geom_bar() +
+  labs(title = "Number of Countries by Legal System",
+       x = "Legal System",
+       y = "Number of Countries") +
+  theme_minimal() +
+  coord_flip()
+
+```
 
 ```{r}
 
 
-
+countries |>
+  select(`People and Society: Maternal mortality ratio`) |>
+  mutate(`People and Society: Maternal mortality ratio` = 
+           as.numeric(str_extract(`People and Society: Maternal mortality ratio`, "[0-9]+"))) |>
+  mutate(`People and Society: Maternal mortality ratio` = `People and Society: Maternal mortality ratio`/100000) |>
+  ggplot(aes(x = `People and Society: Maternal mortality ratio`)) +
+  geom_histogram(bins = 30, color = "green4", fill = "green1") +
+  labs(title = "Maternal Mortality Ratio",
+       x = "Maternal Mortality Ratio",
+       y = "Count") +
+  theme_minimal()
 ```
+
+
+
 
