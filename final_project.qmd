@@ -9,201 +9,200 @@ format:
 ```{r Read the data}
 # Read the data
 library(tidyverse)
-countries <- read_csv("data/countries.csv")
+data_df <- read_csv("data/data.csv")
+preprocessed_data_df <- read_csv("data/preprocessed_data.csv")
+raw_fighter_df <- read_csv("data/raw_fighter_details.csv")
+raw_total_fight_df <- read_delim("data/raw_total_fight_data.csv", delim = ";")
 ```
 
 
 # Introduction
 
-This is the final project for the course. The project is about the analysis of the countries dataset. The data is from Kaggle and can be found [here](https://www.kaggle.com/datasets/lucafrance/the-world-factbook-by-cia). It has 258 rows and 1036 columns.The dataset contains information about countries such as the country name, continent, population, area, GDP, and other variables. The goal of the project is to explore the dataset, analyze the data, and create visualizations to help understand the data better. The project will include data exploration, data visualization, and data analysis. 
+The Ultimate Fighting Championship (UFC) is the largest mixed martial arts promotion company in the world featuring most of the top-ranked fighters in the sport. The organization showcases nine weight divisions and enforces the Unified Rules of Mixed Martial Arts. The UFC produces events worldwide that showcase twelve weight divisions and abide by the Unified Rules of Mixed Martial Arts.This project aims to analyze the UFC data to provide insights into the fighters and fights. The data was obtained from [Kaggle](https://www.kaggle.com/datasets/rajeevw/ufcdata/data) and contains information on fighters, fights, and preprocessed data.
+
 
 # Data Description
 
-The dataset contains the following variables:
+The data contains the following columns:
 
-- `Country: Name`: The name of the country.
-- `Geography: Map references`: The continent the country belongs to.
-- `Geography: Area - total`: The total area of the country in square kilometers.
-- `Economy: Real GDP per capita`: The real GDP per capita of the country.
-- `People and Society: Population`: The population of the country.
-- `Government: Capital`: The capital city of the country.
-- `Government: Government type`: The type of government of the country.
-- `Government: Independence`: The date of independence of the country.
-- `Government: National holiday`: The national holiday of the country.
-- `Government: Constitution`: The date of the constitution of the country.
-- `Government: Legal system`: The legal system of the country.
-
+- `R_` and `B_` prefix signifies red and blue corner fighter stats respectively
+- `_opp_` containing columns is the average of damage done by the opponent on the fighter
+- `KD` is number of knockdowns
+- `SIG_STR` is no. of significant strikes 'landed of attempted'
+- `SIG_STR_pct` is significant strikes percentage
+- `TOTAL_STR` is total strikes 'landed of attempted'
+- `TD` is no. of takedowns
+- `TD_pct` is takedown percentages
+- `SUB_ATT` is no. of submission attempts
+- `PASS` is no. times the guard was passed?
+- `REV` is the no. of Reversals landed
+- `HEAD` is no. of significant strinks to the head 'landed of attempted'
+- `BODY` is no. of significant strikes to the body 'landed of attempted'
+- `CLINCH` is no. of significant strikes in the clinch 'landed of attempted'
+- `GROUND` is no. of significant strikes on the ground 'landed of attempted'
+- `win_by` is method of win
+- `last_round` is last round of the fight (ex. if it was a KO in 1st, then this will be 1)
+- `last_round_time` is when the fight ended in the last round
+- `Format` is the format of the fight (3 rounds, 5 rounds etc.)
+- `Referee` is the name of the Ref
+- `date` is the date of the fight
+- `location` is the location in which the event took place
+- `Fight_type` is which weight class and whether it's a title bout or not
+- `Winner` is the winner of the fight
+- `Stance` is the stance of the fighter (orthodox, southpaw, etc.)
+- `Height_cms` is the height in centimeter
+- `Reach_cms` is the reach of the fighter (arm span) in centimeter
+- `Weight_lbs` is the weight of the fighter in pounds (lbs)
+- `age` is the age of the fighter
+- `title_bout` Boolean value of whether it is title fight or not
+- `weight_class` is which weight class the fight is in (Bantamweight, heavyweight, Women's flyweight, etc.)
+- `no_of_rounds` is the number of rounds the fight was scheduled for
+- `current_lose_streak` is the count of current concurrent losses of the fighter
+- `current_win_streak` is the count of current concurrent wins of the fighter
+- `draw` is the number of draws in the fighter's ufc career
+- `wins` is the number of wins in the fighter's ufc career
+- `losses` is the number of losses in the fighter's ufc career
+- `total_rounds_fought` is the average of total rounds fought by the fighter
+- `total_time_fought(seconds)` is the count of total time spent fighting in seconds
+- `total_title_bouts` is the total number of title bouts taken part in by the fighter
+- `win_by_Decision_Majority` is the number of wins by majority judges decision in the fighter's ufc career
+- `win_by_Decision_Split` is the number of wins by split judges decision in the fighter's ufc career
+- `win_by_Decision_Unanimous` is the number of wins by unanimous judges decision in the fighter's ufc career
+- `win_by_KO/TKO` is the number of wins by knockout in the fighter's ufc career
+- `win_by_Submission` is the number of wins by submission in the fighter's ufc career
+- `win_by_TKO_Doctor_Stoppage` is the number of wins by doctor stoppage in the fighter's ufc career
 
 
 # Data Exploration
 
-```{r Explore the data}
-# Display the first few rows of the dataset
-head(countries)
-```
-
-
 ```{r}
+# Weight classes
 
-countries |>
-  mutate(`Geography: Map references` = as.factor(`Geography: Map references`)) |>
-  ggplot(aes(x = `Geography: Map references`, 
-                      fill = `Geography: Map references`)) +
-  geom_bar() +
-  labs(title = "Number of Countries by Continent",
-       x = "Continent",
-       y = "Number of Countries") +
+ggplot(data_df, aes(x = weight_class)) +
+  geom_bar(fill = "green4", color = "black") +
   theme_minimal() +
-  coord_flip()
-
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  labs(title = "Weight Classes", x = "Weight Class", y = "Count")
 ```
 
 ```{r}
-# Extract digits from the `Geography: Area - total` column
+# Fighting stance
 
-countries |>
-  mutate(`Geography: Area - total` = 
-           as.numeric(str_extract(`Geography: Area - total`, "[0-9]+"))) |>
-  ggplot(aes(x = `Geography: Map references`, 
-                      y = `Geography: Area - total`, 
-                      fill = `Geography: Map references`)) +
-  geom_boxplot() +
-  labs(title = "Area of Countries by Continent",
-       x = "Continent",
-       y = "Area (sq km)") +
+ggplot(raw_fighter_df, aes(x = Stance)) +
+  geom_bar(fill = "green4", color = "black") +
   theme_minimal() +
-  coord_flip()
-
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  labs(title = "Fighting Stance", x = "Stance", y = "Count")
 ```
 
 ```{r}
-# Extract digits from the `Economy: Real GDP per capita` column
+# Wins by decision
 
-countries |>
-  mutate(`Economy: Real GDP per capita` = 
-           str_split(`Economy: Real GDP per capita`, " ")) |>
-  select(`Economy: Real GDP per capita`)
-  
-  
-ggplot(countries, aes(x = `Geography: Map references`, 
-                      y = `Economy: Real GDP per capita`, 
-                      fill = `Geography: Map references`)) +
-  geom_boxplot() +
-  labs(title = "GDP per Capita by Continent",
-       x = "Continent",
-       y = "GDP per Capita") +
+ggplot(raw_total_fight_df, aes(x = win_by)) +
+  geom_bar(fill = "green4", color = "black") +
   theme_minimal() +
-  coord_flip()
-
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  labs(title = "Wins by Decision", x = "Win by", y = "Count")
 ```
 
 ```{r}
-ggplot(countries, aes(x = `Geography: Map references`, 
-                      y = `People and Society: Population`, 
-                      fill = `Geography: Map references`)) +
-  geom_boxplot() +
-  labs(title = "Population by Continent",
-       x = "Continent",
-       y = "Population") +
+# Red Height vs Reach
+
+ggplot(preprocessed_data_df, aes(x = R_Height_cms, y = R_Reach_cms)) +
+  geom_point(color = "red") +
   theme_minimal() +
-  coord_flip()
-
+  labs(title = "Red Height vs Reach", x = "Height (cm)", y = "Reach (cm)") +
+  theme(legend.position = "none")
 ```
 
 ```{r}
-ggplot(countries, aes(x = `Geography: Map references`, 
-                      y = `Geography: Area - total`, 
-                      fill = `Geography: Map references`)) +
-  geom_point(aes(size = `People and Society: Population`)) +
-  labs(title = "Population vs Area by Continent",
-       x = "Area (sq km)",
-       y = "Population") +
+
+# Blue Height vs Reach
+
+ggplot(preprocessed_data_df, aes(x = B_Height_cms, y = B_Reach_cms)) +
+  geom_point(color = "blue") +
   theme_minimal() +
-  coord_flip()
-
+  labs(title = "Blue Height vs Reach", x = "Height (cm)", y = "Reach (cm)") +
+  theme(legend.position = "none")
 ```
 
 ```{r}
-ggplot(countries, aes(x = `Economy: Real GDP per capita`, 
-                      y = `People and Society: Population`, 
-                      color = `Geography: Map references`)) +
-  geom_point() +
-  labs(title = "Population vs GDP per Capita",
-       x = "GDP per Capita",
-       y = "Population") +
+
+# Red Weight vs Age
+
+ggplot(preprocessed_data_df, aes(x = R_Weight_lbs, y = R_age)) +
+  geom_point(color = "red") +
+  theme_minimal() +
+  labs(title = "Red Weight vs Age", x = "Weight (lbs)", y = "Age") +
+  theme(legend.position = "none")
+```
+
+```{r}
+
+# Blue Weight vs Age
+
+ggplot(preprocessed_data_df, aes(x = B_Weight_lbs, y = B_age)) +
+  geom_point(color = "blue") +
+  theme_minimal() +
+  labs(title = "Blue Weight vs Age", x = "Weight (lbs)", y = "Age") +
+  theme(legend.position = "none")
+```
+
+```{r}
+# Histogram of body strike takedown percentage
+
+ggplot(preprocessed_data_df, aes(x =B_avg_TD_pct)) +
+  geom_histogram(fill = "green4", color = "black") +
   theme_minimal()
-
 ```
 
 ```{r}
-ggplot(countries, aes(x = `Economy: Real GDP per capita`, 
-                      y = `Geography: Area - total`, 
-                      color = `Geography: Map references`)) +
-  geom_point() +
-  labs(title = "Area vs GDP per Capita",
-       x = "GDP per Capita",
-       y = "Area (sq km)") +
+# Histogram of win by KO/TKO BY Red
+
+ggplot(preprocessed_data_df, aes(x = `R_win_by_KO/TKO`)) +
+  geom_histogram(fill = "red", color = "black") +
   theme_minimal()
-
 ```
 
 ```{r}
-ggplot(countries, aes(x = `People and Society: Population`, 
-                      y = `Geography: Area - total`, 
-                      color = `Geography: Map references`)) +
-  geom_point() +
-  labs(title = "Area vs Population",
-       x = "Population",
-       y = "Area (sq km)") +
+
+# Histogram of win by KO/TKO BY Blue
+ggplot(preprocessed_data_df, aes(x = `B_win_by_KO/TKO`)) +
+  geom_histogram(fill = "blue", color = "black") +
   theme_minimal()
 
 ```
 
 ```{r}
 
-countries |>
-  mutate(`Government: Government type` = as.factor(`Government: Government type`)) |>
-  ggplot(aes(x = `Government: Government type`, 
-                      fill = `Government: Government type`)) +
-  geom_bar() +
-  labs(title = "Number of Countries by Government Type",
-       x = "Government Type",
-       y = "Number of Countries") +
-  theme_minimal() +
-  coord_flip()
+# Histogram of win by submission by Red
 
-```
-
-```{r}
-
-countries |>
-  mutate(`Government: Legal system` = as.factor(`Government: Legal system`)) |>
-  ggplot(aes(x = `Government: Legal system`, 
-                      fill = `Government: Legal system`)) +
-  geom_bar() +
-  labs(title = "Number of Countries by Legal System",
-       x = "Legal System",
-       y = "Number of Countries") +
-  theme_minimal() +
-  coord_flip()
-
-```
-
-```{r}
-
-
-countries |>
-  select(`People and Society: Maternal mortality ratio`) |>
-  mutate(`People and Society: Maternal mortality ratio` = 
-           as.numeric(str_extract(`People and Society: Maternal mortality ratio`, "[0-9]+"))) |>
-  mutate(`People and Society: Maternal mortality ratio` = `People and Society: Maternal mortality ratio`/100000) |>
-  ggplot(aes(x = `People and Society: Maternal mortality ratio`)) +
-  geom_histogram(bins = 30, color = "green4", fill = "green1") +
-  labs(title = "Maternal Mortality Ratio",
-       x = "Maternal Mortality Ratio",
-       y = "Count") +
+ggplot(preprocessed_data_df, aes(x = `R_win_by_Submission`)) +
+  geom_histogram(fill = "red", color = "black") +
   theme_minimal()
 ```
+
+```{r}
+
+
+ggplot(preprocessed_data_df, aes(x = B_avg_SIG_STR_pct)) +
+  geom_histogram(fill = "blue", color = "black") +
+  theme_minimal()
+```
+
+```{r}
+
+# significant strikes percentage By Blue vs Oppoenent
+
+ggplot(preprocessed_data_df, aes(x = B_avg_SIG_STR_pct, y = B_avg_opp_SIG_STR_pct)) +
+  geom_point(color = "blue") +
+  theme_minimal() +
+  facet_wrap(Winner~title_bout)
+```
+
+
+
+
 
 
 
