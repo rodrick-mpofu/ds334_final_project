@@ -202,6 +202,150 @@ ggplot(preprocessed_data_df, aes(x = B_avg_SIG_STR_pct, y = B_avg_opp_SIG_STR_pc
 
 
 
+```{r}
+# UFC event per year
+library(lubridate)
+
+data_df$date <- ymd(data_df$date)
+
+
+ggplot(data_df, aes(x = year(date))) +
+  geom_bar(fill = "green4", color = "black") +
+  theme_minimal() +
+  labs(title = "UFC Events per Year", x = "Year", y = "Count")
+
+
+```
+
+```{r}
+# Distribution of age, Red
+
+
+ggplot(preprocessed_data_df, aes(x = R_age)) +
+  geom_histogram(fill = "red", color = "black") +
+  theme_minimal()
+```
+
+```{r}
+
+# Distribution of age, Blue
+
+ggplot(preprocessed_data_df, aes(x = B_age)) +
+  geom_histogram(fill = "blue", color = "black") +
+  theme_minimal()
+```
+
+```{r}
+
+# UFC fight out by Division
+
+ggplot(raw_total_fight_df, aes(x= Fight_type, fill = win_by)) +
+  geom_bar() +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  labs(title = "UFC Fight Outcome by Division", x = "Division", y = "Count")
+```
+
+```{r}
+preprocessed_data_df |>
+  pivot_longer(cols = c(R_win_by_Decision_Majority, 
+                        R_win_by_Decision_Split, 
+                        R_win_by_Decision_Unanimous, 
+                        `R_win_by_KO/TKO`, 
+                        R_win_by_Submission, 
+                        R_win_by_TKO_Doctor_Stoppage,
+                        B_win_by_Decision_Majority,
+                        B_win_by_Decision_Split,
+                        B_win_by_Decision_Unanimous,
+                        `B_win_by_KO/TKO`,
+                        B_win_by_Submission,
+                        B_win_by_TKO_Doctor_Stoppage),
+               names_to = "Win_by", values_to = "Count") |>
+  pivot_longer(cols = c(weight_class_Bantamweight,
+                        weight_class_CatchWeight,
+                        weight_class_Featherweight,
+                        weight_class_Flyweight,
+                        weight_class_Heavyweight,
+                        weight_class_LightHeavyweight,
+                        weight_class_Lightweight,
+                        weight_class_Middleweight,
+                        weight_class_OpenWeight,
+                        weight_class_Welterweight,
+                        weight_class_WomenBantamweight,
+                        weight_class_WomenFeatherweight,
+                        weight_class_WomenFlyweight,
+                        weight_class_WomenStrawweight), 
+               names_to = "Fight_type", values_to = "count2") |>
+  ggplot(aes(x = Fight_type, y = count2, fill = Win_by)) +
+  geom_bar(stat = "identity") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  labs(title = "UFC Fight Outcome by Division", x = "Division", y = "Count") 
+  
+```
+
+
+```{r}
+# UFC fight outcome over the years
+
+ggplot(data_df, aes(x=year(date), fill = win_by)) +
+  geom_col() +
+  theme_minimal() +
+  labs(title = "UFC Fight Outcome Over the Years", x = "Year", y = "Count")
+
+data_df |> 
+  pivot_longer(cols = c(R_win_by_Decision_Majority, 
+                        R_win_by_Decision_Split, 
+                        R_win_by_Decision_Unanimous, 
+                        `R_win_by_KO/TKO`, 
+                        R_win_by_Submission, 
+                        R_win_by_TKO_Doctor_Stoppage,
+                        B_win_by_Decision_Majority,
+                        B_win_by_Decision_Split,
+                        B_win_by_Decision_Unanimous,
+                        `B_win_by_KO/TKO`,
+                        B_win_by_Submission,
+                        B_win_by_TKO_Doctor_Stoppage),
+               names_to = "Win_by", values_to = "Count") |>
+  mutate(Win_by = str_replace_all(Win_by, c("R_" = "", "B_" = ""))) |>
+  mutate(Win_by = as.factor(Win_by)) |>
+  ggplot(aes(x=year(date), fill = Win_by)) +
+  geom_bar() +
+  labs(title = "UFC Fight Outcome Over the Years", x = "Year", y = "Count")
+  
+  
+
+```
+
+```{r}
+# Line graph instead of bar graph
+
+data_df |> 
+  pivot_longer(cols = c(R_win_by_Decision_Majority, 
+                        R_win_by_Decision_Split, 
+                        R_win_by_Decision_Unanimous, 
+                        `R_win_by_KO/TKO`, 
+                        R_win_by_Submission, 
+                        R_win_by_TKO_Doctor_Stoppage,
+                        B_win_by_Decision_Majority,
+                        B_win_by_Decision_Split,
+                        B_win_by_Decision_Unanimous,
+                        `B_win_by_KO/TKO`,
+                        B_win_by_Submission,
+                        B_win_by_TKO_Doctor_Stoppage),
+               names_to = "Win_by", values_to = "Count") |>
+  mutate(Win_by = str_replace_all(Win_by, c("R_" = "", "B_" = ""))) |>
+  mutate(Win_by = as.factor(Win_by), year = year(date)) |>
+  group_by(year, Win_by) |>
+  summarise(Count = sum(Count), year) |>
+  filter(row_number()==1) |>
+  ggplot(aes(x=year, y = Count, color = Win_by)) +
+  geom_line() +
+  labs(title = "UFC Fight Outcome Over the Years", x = "Year", y = "Count")
+  
+```
+
+
 
 
 
