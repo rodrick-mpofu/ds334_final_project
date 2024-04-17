@@ -281,17 +281,12 @@ preprocessed_data_df |>
   theme_minimal() +
   theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
   labs(title = "UFC Fight Outcome by Division", x = "Division", y = "Count") 
-  
+
 ```
 
 
 ```{r}
 # UFC fight outcome over the years
-
-ggplot(data_df, aes(x=year(date), fill = win_by)) +
-  geom_col() +
-  theme_minimal() +
-  labs(title = "UFC Fight Outcome Over the Years", x = "Year", y = "Count")
 
 data_df |> 
   pivot_longer(cols = c(R_win_by_Decision_Majority, 
@@ -312,8 +307,8 @@ data_df |>
   ggplot(aes(x=year(date), fill = Win_by)) +
   geom_bar() +
   labs(title = "UFC Fight Outcome Over the Years", x = "Year", y = "Count")
-  
-  
+
+
 
 ```
 
@@ -342,11 +337,127 @@ data_df |>
   ggplot(aes(x=year, y = Count, color = Win_by)) +
   geom_line() +
   labs(title = "UFC Fight Outcome Over the Years", x = "Year", y = "Count")
-  
+
+```
+
+```{r}
+
+data_df |>
+  pivot_longer(cols = c(R_Stance, B_Stance), 
+               names_to = "Fighter_B_Or_R", 
+               values_to = "Stance") |>
+  mutate(Stance = as.factor(Stance), year = year(date)) |>
+  group_by(year, Stance) |>
+  summarise(Count = n(), year) |>
+  filter(row_number()==1) |>
+  ggplot(aes(x=year, y = Count, color = Stance)) +
+  geom_line() +
+  labs(title = "UFC Fighter Stance Popularity Over the Years", x = "Year", y = "Count") +
+  theme_minimal()
+
+
+```
+
+# Shiny app
+
+
+```{r}
+
+# table of fighters
+
+data_df |> 
+  pivot_longer(cols = c(R_fighter, B_fighter), 
+               names_to = "Fighter_Name", 
+               values_to = "Fighter") |>
+  filter(!is.na(Fighter)) 
+
+```
+
+```{r}
+colnames(data_df)
+```
+
+```{r}
+
+# Filter data for a specific fighter
+fighter_data <- data_df |> 
+  filter(R_fighter == "Conor McGregor" | B_fighter == "Conor McGregor") |>
+  mutate(Date = as.Date(date)) |>
+  select(Date, R_fighter, B_fighter, R_avg_SIG_STR_landed, B_avg_SIG_STR_landed, 
+         R_avg_TD_landed, B_avg_TD_landed, `R_total_time_fought(seconds)`, `B_total_time_fought(seconds)`)
+
+```
+
+```{r}
+library(shiny)
+
+choices_R <- data_df |>
+  pull(R_fighter) |>
+  unique()
+
+choices_B <- data_df |>
+  pull(B_fighter) |>
+  unique()
+
+choices <- union(choices_R, choices_B)
+
+ui <- fluidPage(
+  titlePanel("Fighter Stats Over Time"),
+  sidebarLayout(
+    sidebarPanel(
+      selectInput("selectedFighter", "Select a Fighter",
+                  choices = choices)
+    ),
+    mainPanel(
+      plotOutput("statsPlot")
+    )
+  )
+)
+
 ```
 
 
+```{r}
+server <- function(input, output) {
+  output$statsPlot <- renderPlot({
+    
+    # Filter data for a specific fighter
+    fighter_data <- data_df |> 
+      filter(R_fighter == input$selectedFighter | B_fighter == input$selectedFighter) |>
+      mutate(Date = as.Date(date)) |>
+      select(Date, R_fighter, B_fighter, 
+             R_avg_SIG_STR_landed, B_avg_SIG_STR_landed, 
+             R_avg_TD_landed, B_avg_TD_landed, 
+             `R_total_time_fought(seconds)`, `B_total_time_fought(seconds)`)
+    
+    
+    # Determine which corner the fighter was in and select the correct stats
+    fighter_stats <- fighter_data |>
+      mutate(SIG_STR_landed = if_else(R_fighter == input$selectedFighter, 
+                                      R_avg_SIG_STR_landed, B_avg_SIG_STR_landed),
+             TD_landed = if_else(R_fighter == input$selectedFighter, 
+                                 R_avg_TD_landed, B_avg_TD_landed),
+             Total_time_fought = if_else(
+               R_fighter == input$selectedFighter, 
+                                         `R_total_time_fought(seconds)`, `B_total_time_fought(seconds)`))
+    
+    # Plotting
+    ggplot(fighter_stats, aes(x = Date)) +
+      geom_line(aes(y = SIG_STR_landed, colour = "Significant Strikes Landed")) +
+      geom_line(aes(y = TD_landed, colour = "Takedowns Landed")) +
+      geom_line(aes(y = Total_time_fought, colour = "Total Time Fought")) +
+      labs(title = "Fighter Performance Over Time", x = "Date", y = "Stat Value") +
+      scale_color_manual(values = c("Significant Strikes Landed" = "blue", 
+                                    "Takedowns Landed" = "red", "Total Time Fought" = "green")) +
+      theme_minimal()
+  })
+}
 
+```
+
+```{r}
+shinyApp(ui, server)
+```
 
 
 
