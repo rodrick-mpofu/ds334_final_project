@@ -15,63 +15,60 @@ raw_fighter_df <- read_csv("data/raw_fighter_details.csv")
 raw_total_fight_df <- read_delim("data/raw_total_fight_data.csv", delim = ";")
 ```
 
-
 # Introduction
 
 The Ultimate Fighting Championship (UFC) is the largest mixed martial arts promotion company in the world featuring most of the top-ranked fighters in the sport. The organization showcases nine weight divisions and enforces the Unified Rules of Mixed Martial Arts. The UFC produces events worldwide that showcase twelve weight divisions and abide by the Unified Rules of Mixed Martial Arts.This project aims to analyze the UFC data to provide insights into the fighters and fights. The data was obtained from [Kaggle](https://www.kaggle.com/datasets/rajeevw/ufcdata/data) and contains information on fighters, fights, and preprocessed data.
 
-
 # Data Description
 
-The data contains the following columns:
+## The data contains the following columns:
 
-- `R_` and `B_` prefix signifies red and blue corner fighter stats respectively
-- `_opp_` containing columns is the average of damage done by the opponent on the fighter
-- `KD` is number of knockdowns
-- `SIG_STR` is no. of significant strikes 'landed of attempted'
-- `SIG_STR_pct` is significant strikes percentage
-- `TOTAL_STR` is total strikes 'landed of attempted'
-- `TD` is no. of takedowns
-- `TD_pct` is takedown percentages
-- `SUB_ATT` is no. of submission attempts
-- `PASS` is no. times the guard was passed?
-- `REV` is the no. of Reversals landed
-- `HEAD` is no. of significant strinks to the head 'landed of attempted'
-- `BODY` is no. of significant strikes to the body 'landed of attempted'
-- `CLINCH` is no. of significant strikes in the clinch 'landed of attempted'
-- `GROUND` is no. of significant strikes on the ground 'landed of attempted'
-- `win_by` is method of win
-- `last_round` is last round of the fight (ex. if it was a KO in 1st, then this will be 1)
-- `last_round_time` is when the fight ended in the last round
-- `Format` is the format of the fight (3 rounds, 5 rounds etc.)
-- `Referee` is the name of the Ref
-- `date` is the date of the fight
-- `location` is the location in which the event took place
-- `Fight_type` is which weight class and whether it's a title bout or not
-- `Winner` is the winner of the fight
-- `Stance` is the stance of the fighter (orthodox, southpaw, etc.)
-- `Height_cms` is the height in centimeter
-- `Reach_cms` is the reach of the fighter (arm span) in centimeter
-- `Weight_lbs` is the weight of the fighter in pounds (lbs)
-- `age` is the age of the fighter
-- `title_bout` Boolean value of whether it is title fight or not
-- `weight_class` is which weight class the fight is in (Bantamweight, heavyweight, Women's flyweight, etc.)
-- `no_of_rounds` is the number of rounds the fight was scheduled for
-- `current_lose_streak` is the count of current concurrent losses of the fighter
-- `current_win_streak` is the count of current concurrent wins of the fighter
-- `draw` is the number of draws in the fighter's ufc career
-- `wins` is the number of wins in the fighter's ufc career
-- `losses` is the number of losses in the fighter's ufc career
-- `total_rounds_fought` is the average of total rounds fought by the fighter
-- `total_time_fought(seconds)` is the count of total time spent fighting in seconds
-- `total_title_bouts` is the total number of title bouts taken part in by the fighter
-- `win_by_Decision_Majority` is the number of wins by majority judges decision in the fighter's ufc career
-- `win_by_Decision_Split` is the number of wins by split judges decision in the fighter's ufc career
-- `win_by_Decision_Unanimous` is the number of wins by unanimous judges decision in the fighter's ufc career
-- `win_by_KO/TKO` is the number of wins by knockout in the fighter's ufc career
-- `win_by_Submission` is the number of wins by submission in the fighter's ufc career
-- `win_by_TKO_Doctor_Stoppage` is the number of wins by doctor stoppage in the fighter's ufc career
-
+-   `R_` and `B_` prefix signifies red and blue corner fighter stats respectively
+-   `_opp_` containing columns is the average of damage done by the opponent on the fighter
+-   `KD` is number of knockdowns
+-   `SIG_STR` is no. of significant strikes 'landed of attempted'
+-   `SIG_STR_pct` is significant strikes percentage
+-   `TOTAL_STR` is total strikes 'landed of attempted'
+-   `TD` is no. of takedowns
+-   `TD_pct` is takedown percentages
+-   `SUB_ATT` is no. of submission attempts
+-   `PASS` is no. times the guard was passed?
+-   `REV` is the no. of Reversals landed
+-   `HEAD` is no. of significant strinks to the head 'landed of attempted'
+-   `BODY` is no. of significant strikes to the body 'landed of attempted'
+-   `CLINCH` is no. of significant strikes in the clinch 'landed of attempted'
+-   `GROUND` is no. of significant strikes on the ground 'landed of attempted'
+-   `win_by` is method of win
+-   `last_round` is last round of the fight (ex. if it was a KO in 1st, then this will be 1)
+-   `last_round_time` is when the fight ended in the last round
+-   `Format` is the format of the fight (3 rounds, 5 rounds etc.)
+-   `Referee` is the name of the Ref
+-   `date` is the date of the fight
+-   `location` is the location in which the event took place
+-   `Fight_type` is which weight class and whether it's a title bout or not
+-   `Winner` is the winner of the fight
+-   `Stance` is the stance of the fighter (orthodox, southpaw, etc.)
+-   `Height_cms` is the height in centimeter
+-   `Reach_cms` is the reach of the fighter (arm span) in centimeter
+-   `Weight_lbs` is the weight of the fighter in pounds (lbs)
+-   `age` is the age of the fighter
+-   `title_bout` Boolean value of whether it is title fight or not
+-   `weight_class` is which weight class the fight is in (Bantamweight, heavyweight, Women's flyweight, etc.)
+-   `no_of_rounds` is the number of rounds the fight was scheduled for
+-   `current_lose_streak` is the count of current concurrent losses of the fighter
+-   `current_win_streak` is the count of current concurrent wins of the fighter
+-   `draw` is the number of draws in the fighter's ufc career
+-   `wins` is the number of wins in the fighter's ufc career
+-   `losses` is the number of losses in the fighter's ufc career
+-   `total_rounds_fought` is the average of total rounds fought by the fighter
+-   `total_time_fought(seconds)` is the count of total time spent fighting in seconds
+-   `total_title_bouts` is the total number of title bouts taken part in by the fighter
+-   `win_by_Decision_Majority` is the number of wins by majority judges decision in the fighter's ufc career
+-   `win_by_Decision_Split` is the number of wins by split judges decision in the fighter's ufc career
+-   `win_by_Decision_Unanimous` is the number of wins by unanimous judges decision in the fighter's ufc career
+-   `win_by_KO/TKO` is the number of wins by knockout in the fighter's ufc career
+-   `win_by_Submission` is the number of wins by submission in the fighter's ufc career
+-   `win_by_TKO_Doctor_Stoppage` is the number of wins by doctor stoppage in the fighter's ufc career
 
 # Data Exploration
 
@@ -200,8 +197,6 @@ ggplot(preprocessed_data_df, aes(x = B_avg_SIG_STR_pct, y = B_avg_opp_SIG_STR_pc
   facet_wrap(Winner~title_bout)
 ```
 
-
-
 ```{r}
 # UFC event per year
 library(lubridate)
@@ -284,7 +279,6 @@ preprocessed_data_df |>
 
 ```
 
-
 ```{r}
 # UFC fight outcome over the years
 
@@ -360,7 +354,6 @@ data_df |>
 
 # Shiny app
 
-
 ```{r}
 
 # table of fighters
@@ -401,25 +394,45 @@ choices_B <- data_df |>
 
 choices <- union(choices_R, choices_B)
 
+weights <- data_df |>
+  pull(weight_class) |>
+  unique()
+
 ui <- fluidPage(
-  titlePanel("Fighter Stats Over Time"),
+  theme = shinytheme("superhero"),
+  titlePanel("Fighter Statistics Over Time"),
   sidebarLayout(
     sidebarPanel(
       selectInput("selectedFighter", "Select a Fighter",
-                  choices = choices)
+                  choices = choices),
+      radioButtons("selectedWeight", "Select a Weight Class",
+                   choices = weights)
     ),
     mainPanel(
-      plotOutput("statsPlot")
+      plotOutput("statsPlot"),
+      dataTableOutput("table")
     )
   )
 )
 
 ```
 
-
 ```{r}
 server <- function(input, output) {
-  output$statsPlot <- renderPlot({
+  
+  observeEvent(input$selectedWeight, {
+    
+    choices <- data_df |>
+      filter(weight_class == input$selectedWeight) |>
+      distinct(R_fighter, B_fighter) |>
+      pull(R_fighter, B_fighter)
+    
+    updateSelectInput(inputId = "selectedFighter", choices = choices)
+    
+    
+  })
+  
+  ufc_reactive <- reactive({
     
     # Filter data for a specific fighter
     fighter_data <- data_df |> 
@@ -440,16 +453,32 @@ server <- function(input, output) {
              Total_time_fought = if_else(
                R_fighter == input$selectedFighter, 
                                          `R_total_time_fought(seconds)`, `B_total_time_fought(seconds)`))
+   
+  })
+  
+  
+  output$statsPlot <- renderPlot({
+    
     
     # Plotting
-    ggplot(fighter_stats, aes(x = Date)) +
+    ggplot(ufc_reactive(), aes(x = Date)) +
       geom_line(aes(y = SIG_STR_landed, colour = "Significant Strikes Landed")) +
       geom_line(aes(y = TD_landed, colour = "Takedowns Landed")) +
       geom_line(aes(y = Total_time_fought, colour = "Total Time Fought")) +
-      labs(title = "Fighter Performance Over Time", x = "Date", y = "Stat Value") +
+      labs(title = glue::glue(input$selectedFighter, " Performance Over Time"), x = "Date", y = "Stat Value") +
       scale_color_manual(values = c("Significant Strikes Landed" = "blue", 
                                     "Takedowns Landed" = "red", "Total Time Fought" = "green")) +
       theme_minimal()
+  })
+  
+  output$table <- renderDataTable({
+    data_df |>
+      filter(weight_class == input$selectedWeight) |>
+      mutate(Date = as.Date(date)) |>
+      select(Date, R_fighter, B_fighter, 
+             R_avg_SIG_STR_landed, B_avg_SIG_STR_landed, 
+             R_avg_TD_landed, B_avg_TD_landed, 
+             `R_total_time_fought(seconds)`, `B_total_time_fought(seconds)`)
   })
 }
 
@@ -460,5 +489,8 @@ shinyApp(ui, server)
 ```
 
 
-
-
+# Next possible steps
+# Modelling?
+# Map ?
+# More interactivity?
+# Fighterwise comparison?
