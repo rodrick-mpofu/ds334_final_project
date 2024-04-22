@@ -383,6 +383,7 @@ fighter_data <- data_df |>
 
 ```{r}
 library(shiny)
+library(shinythemes)
 
 choices_R <- data_df |>
   pull(R_fighter) |>
@@ -494,3 +495,288 @@ shinyApp(ui, server)
 # Map ?
 # More interactivity?
 # Fighterwise comparison?
+
+# Logistic regression to predict fight outcomes
+
+```{r}
+# Logistic regression to predict fight outcomes
+
+modified_df <- data_df |> 
+  select(R_fighter, B_fighter, Winner, R_avg_SIG_STR_landed, B_avg_SIG_STR_landed, 
+         R_avg_TD_landed, B_avg_TD_landed, R_avg_SIG_STR_pct, B_avg_SIG_STR_pct, 
+         R_avg_TD_pct, B_avg_TD_pct, R_avg_SUB_ATT, B_avg_SUB_ATT, 
+         R_avg_REV, B_avg_REV, R_avg_SIG_STR_att, B_avg_SIG_STR_att, 
+         R_avg_TD_att, B_avg_TD_att, R_avg_TOTAL_STR_att, B_avg_TOTAL_STR_att, 
+         R_avg_TD_landed, B_avg_TD_landed, R_avg_TOTAL_STR_landed, B_avg_TOTAL_STR_landed, 
+         R_avg_opp_SIG_STR_landed, B_avg_opp_SIG_STR_landed, R_avg_opp_SIG_STR_att, 
+         B_avg_opp_SIG_STR_att, R_avg_opp_TD_landed, B_avg_opp_TD_landed, 
+         R_avg_opp_TD_att, B_avg_opp_TD_att, R_avg_opp_TOTAL_STR_landed, 
+         B_avg_opp_TOTAL_STR_landed, R_avg_opp_TOTAL_STR_att, B_avg_opp_TOTAL_STR_att, 
+         R_avg_opp_TD_pct, B_avg_opp_TD_pct, R_avg_opp_SIG_STR_pct, B_avg_opp_SIG_STR_pct, 
+         R_avg_opp_SUB_ATT, B_avg_opp_SUB_ATT, R_avg_opp_REV, B_avg_opp_REV) |>
+  mutate(R_win = if_else(Winner == "Red", 1, 0)) |>
+  select(-Winner) |>
+  mutate(R_win = as.factor(R_win)) |>
+  pivot_longer(cols = c(R_avg_SIG_STR_landed, B_avg_SIG_STR_landed, 
+                        R_avg_TD_landed, B_avg_TD_landed, 
+                        R_avg_SIG_STR_pct, B_avg_SIG_STR_pct, 
+                        R_avg_TD_pct, B_avg_TD_pct, 
+                        R_avg_SUB_ATT, B_avg_SUB_ATT, 
+                        R_avg_REV, B_avg_REV, 
+                        R_avg_SIG_STR_att, B_avg_SIG_STR_att, 
+                        R_avg_TD_att, B_avg_TD_att, 
+                        R_avg_TOTAL_STR_att, B_avg_TOTAL_STR_att, 
+                        R_avg_TD_landed, B_avg_TD_landed,
+                        R_avg_TOTAL_STR_landed, B_avg_TOTAL_STR_landed,
+                        R_avg_opp_SIG_STR_landed, B_avg_opp_SIG_STR_landed,
+                        R_avg_opp_SIG_STR_att, B_avg_opp_SIG_STR_att,
+                        R_avg_opp_TD_landed, B_avg_opp_TD_landed,
+                        R_avg_opp_TD_att, B_avg_opp_TD_att,
+                        R_avg_opp_TOTAL_STR_landed, B_avg_opp_TOTAL_STR_landed,
+                        R_avg_opp_TOTAL_STR_att, B_avg_opp_TOTAL_STR_att,
+                        R_avg_opp_TD_pct, B_avg_opp_TD_pct,
+                        R_avg_opp_SIG_STR_pct, B_avg_opp_SIG_STR_pct,
+                        R_avg_opp_SUB_ATT, B_avg_opp_SUB_ATT,
+                        R_avg_opp_REV, B_avg_opp_REV),
+               names_to = "Feature", values_to = "Value") |>
+  mutate(Feature = as.factor(Feature)) |>
+  filter(!is.na(Value))
+
+mod1 <- glm(R_win ~ Feature + Value, data = modified_df, family = "binomial")
+
+mod1 |> summary()
+```
+
+```{r}
+
+# try model with only significant strikes landed and takedowns landed
+
+modified_df <- data_df |> 
+  select(R_fighter, B_fighter, Winner, R_avg_SIG_STR_landed, B_avg_SIG_STR_landed, 
+         R_avg_TD_landed, B_avg_TD_landed) |>
+  mutate(R_win = if_else(Winner == "Red", 1, 0)) |>
+  select(-Winner) |>
+  mutate(R_win = as.factor(R_win)) |>
+  pivot_longer(cols = c(R_avg_SIG_STR_landed, B_avg_SIG_STR_landed, 
+                        R_avg_TD_landed, B_avg_TD_landed),
+               names_to = "Feature", values_to = "Value") |>
+  mutate(Feature = as.factor(Feature)) |>
+  filter(!is.na(Value))
+
+mod2 <- glm(R_win ~ Feature + Value, data = modified_df, family = "binomial")
+
+mod2 |> summary()
+```
+
+
+# map 
+
+```{r}
+## install.packages("maps")
+library(maps)
+library(tidyverse)
+world_df <- ggplot2::map_data("world")
+```
+
+
+```{r}
+# first split the location into city, state, country
+
+ufc_world <- data_df |>
+  separate(location, into = c("City", "State", "Country"), sep = ",")
+```
+
+```{r}
+# how many unique countries are there in the dataset?
+
+ufc_world |>
+  select(Country) |>
+  distinct()
+```
+
+```{r}
+# how many fights have taken place in each country?
+
+country_stat <- ufc_world |>
+  group_by(Country) |>
+  summarise(n = n()) |>
+  arrange(desc(n))
+
+country_stat
+```
+
+```{r}
+# how many fights have taken place in each city?
+
+ufc_world |>
+  group_by(City) |>
+  summarise(n = n()) |>
+  arrange(desc(n))
+```
+
+```{r}
+# how many fights have taken place in each state?
+
+ufc_world |>
+  group_by(State) |>
+  summarise(n = n()) |>
+  arrange(desc(n))
+```
+
+```{r}
+country_stat$Country <- gsub("\"", "", country_stat$Country)
+
+# Trim leading and trailing whitespace
+country_stat$Country <- trimws(country_stat$Country)
+
+head(country_stat$Country)
+```
+
+
+```{r}
+
+world_full <- left_join(world_df, country_stat, by = c("region" = "Country"))
+
+ggplot(data = world_full, aes(x = long, y = lat, group = group, fill = n)) +
+  geom_polygon(color = "black") +
+  coord_fixed(1.3) +
+  theme_void() +
+  scale_fill_viridis_c(option = "plasma", na.value = "grey90") +
+  labs(title = "Number of UFC Fights by Country",
+       fill = "Number of Fights") +
+  theme(legend.position = "bottom")
+```
+
+```{r}
+# state level
+
+state_stat <- ufc_world |>
+  group_by(State) |>
+  summarise(n = n()) |>
+  arrange(desc(n))
+
+state_stat$State <- gsub("\"", "", state_stat$State)
+
+# Trim leading and trailing whitespace
+state_stat$State <- trimws(state_stat$State)
+
+head(state_stat$State)
+```
+
+```{r}
+state_df <- ggplot2::map_data("state")
+
+state_stat <- state_stat |>
+  mutate(State = tolower(State))
+
+state_full <- left_join(state_df, state_stat, by = c("region" = "State"))
+
+ggplot(data = state_full, aes(x = long, y = lat, group = group, fill = n)) +
+  geom_polygon(color = "black") +
+  coord_fixed(1.3) +
+  theme_void() +
+  scale_fill_viridis_c(option = "plasma", na.value = "grey90") +
+  labs(title = "Number of UFC Fights by State",
+       fill = "Number of Fights") +
+  theme(legend.position = "bottom")
+```
+
+```{r}
+# city level
+
+city_stat <- ufc_world |>
+  group_by(City) |>
+  summarise(n = n()) |>
+  arrange(desc(n))
+
+city_stat$City <- gsub("\"", "", city_stat$City)
+
+# Trim leading and trailing whitespace
+city_stat$City <- trimws(city_stat$City)
+
+head(city_stat$City)
+```
+
+```{r}
+my_cities <- maps::world.cities
+
+usa_cities <- filter(my_cities,country.etc == "USA")
+
+head(usa_cities)
+
+```
+
+```{r}
+
+city_full <- left_join(usa_cities, city_stat, by = c("name" = "City"))
+
+```
+
+```{r}
+usa <- map_data("usa")
+```
+
+```{r}
+ggplot(data = usa, aes(x = long, y = lat, group = group)) +
+  geom_polygon(color = "black", fill = "white") +
+  geom_point(data = city_full, aes(x = long, y = lat, size = n, group = NULL), color = "red") +
+  coord_fixed(1.3) +
+  theme_void() +
+  labs(title = "Number of UFC Fights by City",
+       size = "Number of Fights")
+```
+
+
+# Shiny app for fighter wise comparison
+
+```{r}
+library(shiny)
+
+ui <- fluidPage(
+  titlePanel("UFC Fighter Comparison"),
+  sidebarLayout(
+    sidebarPanel(
+      selectInput("fighter1", "Fighter 1", choices = unique(data_df$R_fighter)),
+      selectInput("fighter2", "Fighter 2", choices = unique(data_df$R_fighter)),
+      actionButton("submit", "Submit")
+    ),
+    mainPanel(
+      textOutput("result")
+    )
+  )
+)
+
+server <- function(input, output) {
+  
+  fighter1 <- reactive({
+    data_df |>
+      filter(R_fighter == input$fighter1) |>
+      select(R_fighter, R_avg_SIG_STR_landed, R_avg_TD_landed) |>
+      head(1)
+  })
+  
+  fighter2 <- reactive({
+    data_df |>
+      filter(R_fighter == input$fighter2) |>
+      select(R_fighter, R_avg_SIG_STR_landed, R_avg_TD_landed) |>
+      head(1)
+  })
+  
+  output$result <- renderText({
+    if(input$submit == 0) {
+      return("Please select two fighters and click submit")
+    }
+    
+    fighter1_data <- fighter1()
+    fighter2_data <- fighter2()
+    
+    
+  })
+  
+}
+
+shinyApp(ui = ui, server = server)
+```
+
+
+
