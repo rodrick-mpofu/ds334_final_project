@@ -118,7 +118,7 @@ raw_fighter_df |>
   summarise(Count = n()) |>
   arrange(desc(Count)) |>
   mutate(Stance = factor(Stance, 
-                               levels = unique(Stance)))|>
+                         levels = unique(Stance)))|>
   ggplot(aes(x = Stance, y= Count)) +
   geom_bar(stat = "identity", fill = "green2", color = "black") +
   theme_minimal() +
@@ -134,8 +134,8 @@ raw_total_fight_df |>
   summarise(Count = n()) |>
   arrange(desc(Count)) |>
   mutate(win_by = factor(win_by, 
-                               levels = unique(win_by)))|>
-ggplot(aes(x = win_by, y= Count)) +
+                         levels = unique(win_by)))|>
+  ggplot(aes(x = win_by, y= Count)) +
   geom_bar(stat = "identity",fill = "green4", color = "black") +
   theme_minimal() +
   theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
@@ -440,7 +440,7 @@ weights <- data_df |>
   unique()
 
 ui <- fluidPage(
-  theme = shinytheme("superhero"),
+  theme = shinytheme("darkly"),
   titlePanel("Fighter Statistics Over Time"),
   sidebarLayout(
     sidebarPanel(
@@ -450,8 +450,10 @@ ui <- fluidPage(
                    choices = weights)
     ),
     mainPanel(
-      plotOutput("statsPlot"),
-      dataTableOutput("table")
+      tabsetPanel(
+        tabPanel("Statistics Plot", plotOutput("statsPlot")),
+        tabPanel("Data Table", dataTableOutput("table"))
+      )
     )
   )
 )
@@ -854,6 +856,27 @@ fighter_full <- fighter_full |>
 ```
 
 ```{r}
+# side by side bar plot for two fighters
+
+fighter_full |>
+  filter(fighter %in% c("Conor McGregor", "Khabib Nurmagomedov")) |>
+  pivot_longer(cols = -fighter, names_to = "stat", values_to = "value") |>
+  ggplot(aes(x = stat, y = value, fill = fighter)) +
+  geom_bar(stat = "identity", position = "dodge") +
+  labs(title = "Fighter Stats Comparison",
+       x = "Fighter",
+       y = "Value",
+       fill = "Stat") +
+  theme_minimal()
+```
+
+```{r}
+
+
+```
+
+
+```{r}
 
 max_values <- fighter_full |>
   select(-fighter) |>
@@ -1039,4 +1062,243 @@ shinyApp(ui = ui, server = server)
 ```
 
 
+# Combined shiny app
+
+```{r}
+library(shiny)
+library(shinythemes)
+library(glue)
+library(fmsb)
+
+choices_R <- data_df |>
+  pull(R_fighter) |>
+  unique()
+
+choices_B <- data_df |>
+  pull(B_fighter) |>
+  unique()
+
+choices <- union(choices_R, choices_B)
+
+weights <- data_df |>
+  pull(weight_class) |>
+  unique()
+
+ui <- fluidPage(
+  titlePanel("UFC Fighter Insights"),
+  tabsetPanel(
+    tabPanel("Fighter Statistics Over Time",
+             theme = shinytheme("darkly"),
+             sidebarLayout(
+               sidebarPanel(
+                 selectInput("selectedFighter", "Select a Fighter", choices = choices),
+                 radioButtons("selectedWeight", "Select a Weight Class", choices = weights)
+               ),
+               mainPanel(
+                 tabsetPanel(
+                   tabPanel("Statistics Plot", plotOutput("statsPlot")),
+                   tabPanel("Data Table", dataTableOutput("table"))
+                 )
+               )
+             )
+    ),
+    tabPanel("Fighter Comparison",
+             sidebarLayout(
+               sidebarPanel(
+                 selectInput("fighter1", "Fighter 1", choices = unique(data_df$R_fighter)),
+                 selectInput("fighter2", "Fighter 2", choices = unique(data_df$B_fighter)),
+                 actionButton("submit", "Submit")
+               ),
+               mainPanel(
+                 plotOutput("plot"),
+                 plotOutput("plot2")
+               )
+             )
+    )
+  )
+)
+
+server <- function(input, output, session) {
+  # First app logic
+  observeEvent(input$selectedWeight, {
+    choices <- data_df |>
+      filter(weight_class == input$selectedWeight) |>
+      distinct(R_fighter, B_fighter) |>
+      pull(R_fighter, B_fighter)
+    
+    updateSelectInput(session, inputId = "selectedFighter", choices = choices)
+  })
+  
+  ufc_reactive <- reactive({
+    fighter_data <- data_df |>
+      filter(R_fighter == input$selectedFighter | B_fighter == input$selectedFighter) |>
+      mutate(Date = as.Date(date)) |>
+      select(Date, R_fighter, B_fighter,
+             R_avg_SIG_STR_landed, B_avg_SIG_STR_landed,
+             R_avg_TD_landed, B_avg_TD_landed,
+             `R_total_time_fought(seconds)`, `B_total_time_fought(seconds)`)
+    
+    fighter_stats <- fighter_data |>
+      mutate(SIG_STR_landed = if_else(R_fighter == input$selectedFighter,
+                                      R_avg_SIG_STR_landed, B_avg_SIG_STR_landed),
+             TD_landed = if_else(R_fighter == input$selectedFighter,
+                                 R_avg_TD_landed, B_avg_TD_landed),
+             Total_time_fought = if_else(
+               R_fighter == input$selectedFighter,
+               `R_total_time_fought(seconds)`, `B_total_time_fought(seconds)`))
+  })
+  
+  output$statsPlot <- renderPlot({
+    ggplot(ufc_reactive(), aes(x = Date)) +
+      geom_line(aes(y = SIG_STR_landed, colour = "Significant Strikes Landed")) +
+      geom_line(aes(y = TD_landed, colour = "Takedowns Landed")) +
+      geom_line(aes(y = Total_time_fought, colour = "Total Time Fought")) +
+      labs(title = glue("Performance Over Time"), x = "Date", y = "Stat Value") +
+      scale_color_manual(values = c("Significant Strikes Landed" = "blue", 
+                                    "Takedowns Landed" = "red", "Total Time Fought" = "green")) +
+      theme_minimal()
+  })
+  
+  output$table <- renderDataTable({
+    data_df |>
+      filter(weight_class == input$selectedWeight)|>
+      mutate(Date = as.Date(date)) |>
+      select(Date, R_fighter, B_fighter,
+             R_avg_SIG_STR_landed, B_avg_SIG_STR_landed,
+             R_avg_TD_landed, B_avg_TD_landed,
+             `R_total_time_fought(seconds)`, `B_total_time_fought(seconds)`)
+  })
+  
+  # Second app logic
+  
+  fighter1 <- reactive({
+    data_df |>
+      filter(R_fighter == input$fighter1) |>
+      select(R_fighter, R_avg_SIG_STR_landed, 
+             R_avg_TD_landed, R_avg_SUB_ATT, R_avg_REV, 
+             R_avg_SIG_STR_pct, R_avg_TD_pct) |>
+      rename(fighter = R_fighter,
+             avg_SIG_STR_landed = R_avg_SIG_STR_landed,
+             avg_TD_landed = R_avg_TD_landed,
+             avg_SUB_ATT = R_avg_SUB_ATT,
+             avg_REV = R_avg_REV,
+             avg_SIG_STR_pct = R_avg_SIG_STR_pct,
+             avg_TD_pct = R_avg_TD_pct)
+  })
+  
+  fighter2 <- reactive({
+    data_df |>
+      filter(B_fighter == input$fighter2) |>
+      select(B_fighter, B_avg_SIG_STR_landed, 
+             B_avg_TD_landed, B_avg_SUB_ATT, B_avg_REV, B_avg_SIG_STR_pct, B_avg_TD_pct) |>
+      rename(fighter = B_fighter,
+             avg_SIG_STR_landed = B_avg_SIG_STR_landed,
+             avg_TD_landed = B_avg_TD_landed,
+             avg_SUB_ATT = B_avg_SUB_ATT,
+             avg_REV = B_avg_REV,
+             avg_SIG_STR_pct = B_avg_SIG_STR_pct,
+             avg_TD_pct = B_avg_TD_pct)
+  })
+  
+  fighter_full_df <- reactive({
+    
+    fighter_full <- bind_rows(fighter1(), fighter2())
+    
+    fighter_full <- fighter_full |>
+      drop_na() |>
+      group_by(fighter) |>
+      summarise(avg_SIG_STR_landed = mean(avg_SIG_STR_landed),
+                avg_TD_landed = mean(avg_TD_landed),
+                avg_SUB_ATT = mean(avg_SUB_ATT),
+                avg_REV = mean(avg_REV),
+                avg_SIG_STR_pct = mean(avg_SIG_STR_pct),
+                avg_TD_pct = mean(avg_TD_pct))
+    
+    max_values <- fighter_full |>
+      select(-fighter) |>
+      summarise_all(max)
+    
+    min_values <- fighter_full |>
+      select(-fighter) |>
+      summarise_all(min)
+    
+    fighter_full <- bind_rows(max_values, min_values, fighter_full)
+    
+    # choose two fighters to compare
+    
+    fighter_comp <- fighter_full |>
+      filter(fighter %in% c(input$fighter1, input$fighter2))
+    
+    # Create the radar chart data frame
+    # First, find the max of each column for normalization
+    max_values <- apply(fighter_comp[, 1:6], 2, max)  # Ignoring the 'fighter' column
+    # Create a row for min values (using 0 or small values if negative not possible)
+    min_values <- apply(fighter_comp[, 1:6], 2, function(x) min(x) - (max(x) * 0.1))
+    
+    # Combine the min and max values to normalize the data properly
+    radar_data <- rbind(max_values, min_values, fighter_comp[1:6])
+    
+    
+  })
+  
+  output$plot <- renderPlot({
+    if(input$submit == 0) {
+      return("Please select two fighters and click submit")
+    }
+    
+    # Set graphic colors
+    library(RColorBrewer)
+    coul <- brewer.pal(3, "Accent")
+    colors_border <- coul
+    library(scales)
+    colors_in <- alpha(coul,0.3)
+    
+    
+    # plot with default options:
+    radarchart(fighter_full_df(), axistype=0, 
+               maxmin=T,
+               #custom polygon
+               pcol=colors_border , 
+               pfcol=colors_in , 
+               plwd=4 , plty=1,
+               #custom the grid
+               cglcol="grey", cglty=1, 
+               axislabcol="black", cglwd=0.8,
+               #custom labels
+               vlcex=0.6)
+  })
+  
+  output$plot2 <- renderPlot({
+    # side by side bar plot instead of radar chart
+    fighter_full <- bind_rows(fighter1(), fighter2())
+    
+    fighter_full <- fighter_full |>
+      drop_na() |>
+      group_by(fighter) |>
+      summarise(avg_SIG_STR_landed = mean(avg_SIG_STR_landed),
+                avg_TD_landed = mean(avg_TD_landed),
+                avg_SUB_ATT = mean(avg_SUB_ATT),
+                avg_REV = mean(avg_REV),
+                avg_SIG_STR_pct = mean(avg_SIG_STR_pct),
+                avg_TD_pct = mean(avg_TD_pct))
+    
+    
+    fighter_full |>
+      filter(fighter %in% c(input$fighter1, input$fighter2)) |>
+      pivot_longer(cols = -fighter, names_to = "stat", values_to = "value") |>
+      ggplot(aes(x = stat, y = value, fill = fighter)) +
+      geom_bar(stat = "identity", position = "dodge") +
+      labs(title = "Fighter Stats Comparison",
+           x = "Fighter",
+           y = "Value",
+           fill = "Stat") +
+      theme_minimal()
+    
+  })
+  
+}
+
+shinyApp(ui, server)
+
+```
 
