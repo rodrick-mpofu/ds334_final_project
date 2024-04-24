@@ -70,23 +70,57 @@ The Ultimate Fighting Championship (UFC) is the largest mixed martial arts promo
 -   `win_by_Submission` is the number of wins by submission in the fighter's ufc career
 -   `win_by_TKO_Doctor_Stoppage` is the number of wins by doctor stoppage in the fighter's ufc career
 
+The questions that will be answered in this project are:
+
+1.  What are the weight classes in the UFC?
+2.  What are the fighting stances in the UFC?
+3.  What are the most common ways to win a fight?
+4.  What are the most common ways to lose a fight?
+5.  What are the most common ways to win a fight by decision?
+6.  What are the most common ways to win a fight by knockout?
+7.  What are the most common ways to win a fight by submission?
+8.  What are the most common ways to win a fight by doctor stoppage?
+9.  What are the most common ways to win a fight by split decision?
+
+And the shiny app will provide the following functionalities:
+
+1. Show the trends of different fighter statistics over time
+2. Allow users to compare two fighters and see their statistics side by side
+
 # Data Exploration
 
 ```{r}
 # Weight classes
 
-ggplot(data_df, aes(x = weight_class)) +
-  geom_bar(fill = "green4", color = "black") +
+data_df |>
+  group_by(weight_class) |>
+  summarise(Count = n()) |>
+  arrange(desc(Count)) |>
+  mutate(weight_class = factor(weight_class, 
+                               levels = unique(weight_class)))|>
+  ggplot(aes(x = weight_class, y = Count)) +
+  geom_bar(stat = "identity", fill = "green2", color = "black") +
   theme_minimal() +
   theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
   labs(title = "Weight Classes", x = "Weight Class", y = "Count")
+
 ```
+
+
+
 
 ```{r}
 # Fighting stance
 
-ggplot(raw_fighter_df, aes(x = Stance)) +
-  geom_bar(fill = "green4", color = "black") +
+
+raw_fighter_df |>
+  group_by(Stance) |>
+  summarise(Count = n()) |>
+  arrange(desc(Count)) |>
+  mutate(Stance = factor(Stance, 
+                               levels = unique(Stance)))|>
+  ggplot(aes(x = Stance, y= Count)) +
+  geom_bar(stat = "identity", fill = "green2", color = "black") +
   theme_minimal() +
   theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
   labs(title = "Fighting Stance", x = "Stance", y = "Count")
@@ -95,8 +129,14 @@ ggplot(raw_fighter_df, aes(x = Stance)) +
 ```{r}
 # Wins by decision
 
-ggplot(raw_total_fight_df, aes(x = win_by)) +
-  geom_bar(fill = "green4", color = "black") +
+raw_total_fight_df |>
+  group_by(win_by) |>
+  summarise(Count = n()) |>
+  arrange(desc(Count)) |>
+  mutate(win_by = factor(win_by, 
+                               levels = unique(win_by)))|>
+ggplot(aes(x = win_by, y= Count)) +
+  geom_bar(stat = "identity",fill = "green4", color = "black") +
   theme_minimal() +
   theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
   labs(title = "Wins by Decision", x = "Win by", y = "Count")
@@ -108,8 +148,9 @@ ggplot(raw_total_fight_df, aes(x = win_by)) +
 ggplot(preprocessed_data_df, aes(x = R_Height_cms, y = R_Reach_cms)) +
   geom_point(color = "red") +
   theme_minimal() +
-  labs(title = "Red Height vs Reach", x = "Height (cm)", y = "Reach (cm)") +
-  theme(legend.position = "none")
+  labs(title = "Red Fighter Height vs Reach", x = "Height (cm)", y = "Reach (cm)") +
+  theme(legend.position = "none") +
+  geom_smooth(method = "lm", se = FALSE)
 ```
 
 ```{r}
@@ -119,8 +160,9 @@ ggplot(preprocessed_data_df, aes(x = R_Height_cms, y = R_Reach_cms)) +
 ggplot(preprocessed_data_df, aes(x = B_Height_cms, y = B_Reach_cms)) +
   geom_point(color = "blue") +
   theme_minimal() +
-  labs(title = "Blue Height vs Reach", x = "Height (cm)", y = "Reach (cm)") +
-  theme(legend.position = "none")
+  labs(title = "Blue Fighter Height vs Reach", x = "Height (cm)", y = "Reach (cm)") +
+  theme(legend.position = "none") +
+  geom_smooth(method = "lm", se = FALSE, color = "red")
 ```
 
 ```{r}
@@ -147,9 +189,8 @@ ggplot(preprocessed_data_df, aes(x = B_Weight_lbs, y = B_age)) +
 
 ```{r}
 # Histogram of body strike takedown percentage
-
 ggplot(preprocessed_data_df, aes(x =B_avg_TD_pct)) +
-  geom_histogram(fill = "green4", color = "black") +
+  geom_histogram(fill = "yellow2", color = "black") +
   theme_minimal()
 ```
 
@@ -205,7 +246,7 @@ data_df$date <- ymd(data_df$date)
 
 
 ggplot(data_df, aes(x = year(date))) +
-  geom_bar(fill = "green4", color = "black") +
+  geom_bar(fill = "purple2", color = "black") +
   theme_minimal() +
   labs(title = "UFC Events per Year", x = "Year", y = "Count")
 
@@ -214,7 +255,6 @@ ggplot(data_df, aes(x = year(date))) +
 
 ```{r}
 # Distribution of age, Red
-
 
 ggplot(preprocessed_data_df, aes(x = R_age)) +
   geom_histogram(fill = "red", color = "black") +
@@ -991,11 +1031,6 @@ server <- function(input, output) {
                axislabcol="black", cglwd=0.8,
                #custom labels
                vlcex=0.6)
-
-    
-    
-    
-    
   })
   
 }
