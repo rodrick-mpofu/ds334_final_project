@@ -1,0 +1,343 @@
+---
+title: "UFC Fight Data Analysis"
+author: "Rodrick Mpofu"
+format: 
+  revealjs:
+    theme: moon
+---
+
+
+```{r Read the data}
+#| echo: false
+#| output: false
+#| warning: false
+
+# Read the data
+library(tidyverse)
+data_df <- read_csv("data/data.csv")
+preprocessed_data_df <- read_csv("data/preprocessed_data.csv")
+raw_fighter_df <- read_csv("data/raw_fighter_details.csv")
+raw_total_fight_df <- read_delim("data/raw_total_fight_data.csv", delim = ";")
+```
+
+## Distribution Weight Classes
+
+```{r}
+
+# Weight classes
+
+data_df |>
+  group_by(weight_class) |>
+  summarise(Count = n()) |>
+  arrange(desc(Count)) |>
+  mutate(weight_class = factor(weight_class, 
+                               levels = unique(weight_class)))|>
+  ggplot(aes(x = weight_class, y = Count)) +
+  geom_bar(stat = "identity", fill = "green2", color = "black") +
+  theme_minimal(base_size = 20) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  labs(title = "Weight Classes", x = "Weight Class", y = "Count")
+```
+
+## Distribution of Fighters' Stance
+
+
+```{r}
+# Fighting stance
+
+
+raw_fighter_df |>
+  group_by(Stance) |>
+  summarise(Count = n()) |>
+  arrange(desc(Count)) |>
+  mutate(Stance = factor(Stance, 
+                         levels = unique(Stance)))|>
+  ggplot(aes(x = Stance, y= Count)) +
+  geom_bar(stat = "identity", fill = "green2", color = "black") +
+  theme_minimal(base_size = 20) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  labs(title = "Fighting Stance", x = "Stance", y = "Count")
+```
+
+## Distribution of Wins by Decision
+
+```{r}
+# Wins by decision
+
+raw_total_fight_df |>
+  group_by(win_by) |>
+  summarise(Count = n()) |>
+  arrange(desc(Count)) |>
+  mutate(win_by = factor(win_by, 
+                         levels = unique(win_by)))|>
+  ggplot(aes(x = win_by, y= Count)) +
+  geom_bar(stat = "identity",fill = "green", color = "black") +
+  theme_minimal(base_size = 20) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  labs(title = "Wins by Decision", x = "Win by", y = "Count")
+```
+
+```{r}
+#| echo: false
+#| output: false
+#| warning: false
+
+# UFC event per year
+library(lubridate)
+
+data_df$date <- ymd(data_df$date)
+```
+
+## Wins by Decision Over the Years
+
+
+```{r}
+# Line graph instead of bar graph
+library(gganimate)
+
+year_trans <- data_df |> 
+  pivot_longer(cols = c(R_win_by_Decision_Majority, 
+                        R_win_by_Decision_Split, 
+                        R_win_by_Decision_Unanimous, 
+                        `R_win_by_KO/TKO`, 
+                        R_win_by_Submission, 
+                        R_win_by_TKO_Doctor_Stoppage,
+                        B_win_by_Decision_Majority,
+                        B_win_by_Decision_Split,
+                        B_win_by_Decision_Unanimous,
+                        `B_win_by_KO/TKO`,
+                        B_win_by_Submission,
+                        B_win_by_TKO_Doctor_Stoppage),
+               names_to = "Win_by", values_to = "Count") |>
+  mutate(Win_by = str_replace_all(Win_by, c("R_" = "", "B_" = ""))) |>
+  mutate(Win_by = as.factor(Win_by), year = year(date)) |>
+  group_by(year, Win_by) |>
+  summarise(Count = sum(Count), year) |>
+  filter(row_number()==1) |>
+  ggplot(aes(x=year, y = Count, color = Win_by)) +
+  geom_line() +
+  labs(title = "UFC Fight Outcome Over the Years", x = "Year", y = "Count") +
+  theme_minimal(base_size = 20) +
+  transition_time(year)
+
+animate(year_trans)
+
+```
+
+## Fighter Stance Popularity Over the Years
+
+```{r}
+
+data_df |>
+  pivot_longer(cols = c(R_Stance, B_Stance), 
+               names_to = "Fighter_B_Or_R", 
+               values_to = "Stance") |>
+  mutate(Stance = as.factor(Stance), year = year(date)) |>
+  group_by(year, Stance) |>
+  summarise(Count = n(), year) |>
+  filter(row_number()==1) |>
+  ggplot(aes(x=year, y = Count, color = Stance)) +
+  geom_line() +
+  labs(title = "UFC Fighter Stance Popularity Over the Years", x = "Year", y = "Count") +
+  theme_minimal(base_size = 20)
+
+
+```
+
+# Mapping UFC Fights
+
+
+```{r}
+#| echo: false
+#| output: false
+#| warning: false
+## install.packages("maps")
+library(maps)
+library(tidyverse)
+world_df <- ggplot2::map_data("world")
+```
+
+
+```{r}
+#| echo: false
+#| output: false
+#| warning: false
+# first split the location into city, state, country
+
+ufc_world <- data_df |>
+  separate(location, into = c("City", "State", "Country"), sep = ",")
+```
+
+```{r}
+#| echo: false
+#| output: false
+#| warning: false
+# how many fights have taken place in each country?
+
+country_stat <- ufc_world |>
+  group_by(Country) |>
+  summarise(n = n()) |>
+  arrange(desc(n))
+
+country_stat
+```
+
+```{r}
+#| echo: false
+#| output: false
+#| warning: false
+# how many fights have taken place in each city?
+
+ufc_world |>
+  group_by(City) |>
+  summarise(n = n()) |>
+  arrange(desc(n))
+```
+
+```{r}
+#| echo: false
+#| output: false
+#| warning: false
+# how many fights have taken place in each state?
+
+ufc_world |>
+  group_by(State) |>
+  summarise(n = n()) |>
+  arrange(desc(n))
+```
+
+```{r}
+#| echo: false
+#| output: false
+#| warning: false
+country_stat$Country <- gsub("\"", "", country_stat$Country)
+
+# Trim leading and trailing whitespace
+country_stat$Country <- trimws(country_stat$Country)
+
+head(country_stat$Country)
+```
+
+
+```{r}
+#| echo: false
+
+world_full <- left_join(world_df, country_stat, by = c("region" = "Country"))
+
+
+ggplot(data = world_full, aes(x = long, y = lat, group = group, fill = n)) +
+  geom_polygon(color = "black") +
+  coord_fixed(1.3) +
+  theme_void() +
+  scale_fill_viridis_c(option = "plasma", na.value = "grey90") +
+  labs(title = "Number of UFC Fights by Country",
+       fill = "Number of Fights") +
+  theme(legend.position = "bottom")
+```
+
+
+```{r}
+#| echo: false
+#| output: false
+#| warning: false
+# state level
+
+state_stat <- ufc_world |>
+  group_by(State) |>
+  summarise(n = n()) |>
+  arrange(desc(n))
+
+state_stat$State <- gsub("\"", "", state_stat$State)
+
+# Trim leading and trailing whitespace
+state_stat$State <- trimws(state_stat$State)
+
+head(state_stat$State)
+```
+
+## Number of UFC Fights by State
+
+```{r}
+#| echo: false
+
+state_df <- ggplot2::map_data("state")
+
+state_stat <- state_stat |>
+  mutate(State = tolower(State))
+
+state_full <- left_join(state_df, state_stat, by = c("region" = "State"))
+
+ggplot(data = state_full, aes(x = long, y = lat, group = group, fill = n)) +
+  geom_polygon(color = "black") +
+  coord_fixed(1.3) +
+  theme_void() +
+  scale_fill_viridis_c(option = "plasma", na.value = "grey90") +
+  labs(title = "Number of UFC Fights by State",
+       fill = "Number of Fights") +
+  theme(legend.position = "bottom")
+```
+
+
+```{r}
+#| echo: false
+#| output: false
+#| warning: false
+# city level
+
+city_stat <- ufc_world |>
+  group_by(City) |>
+  summarise(n = n()) |>
+  arrange(desc(n))
+
+city_stat$City <- gsub("\"", "", city_stat$City)
+
+# Trim leading and trailing whitespace
+city_stat$City <- trimws(city_stat$City)
+
+head(city_stat$City)
+```
+
+```{r}
+#| echo: false
+#| output: false
+#| warning: false
+my_cities <- maps::world.cities
+
+usa_cities <- filter(my_cities,country.etc == "USA")
+
+head(usa_cities)
+
+```
+
+```{r}
+#| echo: false
+#| output: false
+#| warning: false
+
+city_full <- left_join(usa_cities, city_stat, by = c("name" = "City"))
+
+```
+
+```{r}
+#| echo: false
+#| output: false
+#| warning: false
+usa <- map_data("usa")
+```
+
+## Number of UFC Fights by City
+
+```{r}
+#| echo: false
+
+ggplot(data = usa, aes(x = long, y = lat, group = group)) +
+  geom_polygon(color = "black", fill = "white") +
+  geom_point(data = city_full, aes(x = long, y = lat, size = n, group = NULL), color = "red") +
+  coord_fixed(1.3) +
+  theme_void() +
+  labs(title = "Number of UFC Fights by City",
+       size = "Number of Fights")
+```
+
+
+
