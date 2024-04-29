@@ -106,7 +106,7 @@ data_df |>
 
 ```
 
-
+The graph above shows the weight classes in the UFC. The most common weight class is Lightweight, followed by Welterweight and Middleweight. The least common weight classes are the openweight and catchweight classes and women's featherweight.
 
 
 ```{r}
@@ -126,6 +126,8 @@ raw_fighter_df |>
   labs(title = "Fighting Stance", x = "Stance", y = "Count")
 ```
 
+The graph above shows the fighting stances in the UFC. The most common fighting stance is orthodox, followed by southpaw and switch. The least common fighting stance is open stance and sideways.
+
 ```{r}
 # Wins by decision
 
@@ -136,11 +138,14 @@ raw_total_fight_df |>
   mutate(win_by = factor(win_by, 
                          levels = unique(win_by)))|>
   ggplot(aes(x = win_by, y= Count)) +
-  geom_bar(stat = "identity",fill = "green4", color = "black") +
+  geom_bar(stat = "identity",fill = "green", color = "black") +
   theme_minimal() +
   theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
   labs(title = "Wins by Decision", x = "Win by", y = "Count")
 ```
+
+The graph above shows the most common ways to win a fight by decision. The most common way to win a fight by decision is by unanimous decision, followed by KO/TKO, split decision and majority decision. The least common way to win a fight by decision is by split majority decision and disqualification.
+
 
 ```{r}
 # Red Height vs Reach
@@ -152,6 +157,8 @@ ggplot(preprocessed_data_df, aes(x = R_Height_cms, y = R_Reach_cms)) +
   theme(legend.position = "none") +
   geom_smooth(method = "lm", se = FALSE)
 ```
+
+The graph above shows the relationship between the height and reach of red fighters. The graph shows a positive correlation between height and reach, which means that as the height of the fighter increases, the reach also increases.
 
 ```{r}
 
@@ -165,6 +172,9 @@ ggplot(preprocessed_data_df, aes(x = B_Height_cms, y = B_Reach_cms)) +
   geom_smooth(method = "lm", se = FALSE, color = "red")
 ```
 
+The graph above shows the relationship between the height and reach of blue fighters. The graph shows a positive correlation between height and reach, which means that as the height of the fighter increases, the reach also increases.
+
+
 ```{r}
 
 # Red Weight vs Age
@@ -173,8 +183,12 @@ ggplot(preprocessed_data_df, aes(x = R_Weight_lbs, y = R_age)) +
   geom_point(color = "red") +
   theme_minimal() +
   labs(title = "Red Weight vs Age", x = "Weight (lbs)", y = "Age") +
-  theme(legend.position = "none")
+  theme(legend.position = "none") +
+  geom_smooth( se = FALSE)
 ```
+
+The graph above shows the relationship between the weight and age of red fighters. The graph shows that there is no clear relationship between weight and age among red fighters.
+
 
 ```{r}
 
@@ -184,15 +198,27 @@ ggplot(preprocessed_data_df, aes(x = B_Weight_lbs, y = B_age)) +
   geom_point(color = "blue") +
   theme_minimal() +
   labs(title = "Blue Weight vs Age", x = "Weight (lbs)", y = "Age") +
-  theme(legend.position = "none")
+  theme(legend.position = "none") +
+  geom_smooth(color = "red")
 ```
+
+The graph above shows the relationship between the weight and age of blue fighters. The graph shows that there is no clear relationship between weight and age among blue fighters.
 
 ```{r}
 # Histogram of body strike takedown percentage
-ggplot(preprocessed_data_df, aes(x =B_avg_TD_pct)) +
+
+preprocessed_data_df |>
+  ggplot(aes(x = R_avg_TD_att)) +
+  geom_histogram(fill = "red", color = "black") +
+  theme_minimal()
+
+ggplot(preprocessed_data_df, aes(x =B_avg_TD_att)) +
   geom_histogram(fill = "yellow2", color = "black") +
   theme_minimal()
 ```
+
+The graph above shows the distribution of the average takedown percentage of blue fighters. The graph shows that the average takedown attempt of blue fighters is between 0 and 2.5. The graph also shows that the average takedown attempt of red fighters is between 0 and 2.5.
+
 
 ```{r}
 # Histogram of win by KO/TKO BY Red
@@ -201,6 +227,9 @@ ggplot(preprocessed_data_df, aes(x = `R_win_by_KO/TKO`)) +
   geom_histogram(fill = "red", color = "black") +
   theme_minimal()
 ```
+
+The graph above shows the distribution of the win by KO/TKO of red fighters. The graph shows that the win by KO/TKO of red fighters is between 0 and 2.5.
+
 
 ```{r}
 
@@ -211,6 +240,8 @@ ggplot(preprocessed_data_df, aes(x = `B_win_by_KO/TKO`)) +
 
 ```
 
+The graph above shows the distribution of the win by KO/TKO of blue fighters. The graph shows that the win by KO/TKO of blue fighters is between 0 and 2.5.
+
 ```{r}
 
 # Histogram of win by submission by Red
@@ -220,8 +251,9 @@ ggplot(preprocessed_data_df, aes(x = `R_win_by_Submission`)) +
   theme_minimal()
 ```
 
-```{r}
+The graph above shows the distribution of the win by submission of red fighters. The graph shows that the win by submission of red fighters is between 0 and 2.5.
 
+```{r}
 
 ggplot(preprocessed_data_df, aes(x = B_avg_SIG_STR_pct)) +
   geom_histogram(fill = "blue", color = "black") +
@@ -230,25 +262,20 @@ ggplot(preprocessed_data_df, aes(x = B_avg_SIG_STR_pct)) +
 
 ```{r}
 
-# significant strikes percentage By Blue vs Oppoenent
-
-ggplot(preprocessed_data_df, aes(x = B_avg_SIG_STR_pct, y = B_avg_opp_SIG_STR_pct)) +
-  geom_point(color = "blue") +
-  theme_minimal() +
-  facet_wrap(Winner~title_bout)
+ggplot(preprocessed_data_df, aes(x = R_avg_SIG_STR_pct)) +
+  geom_histogram(fill = "red", color = "black") +
+  theme_minimal()
 ```
+
+
+The graph above shows the distribution of the average significant strike percentage of blue fighters. The graph shows that the average significant strike percentage of both blue and red fighters is around 50%. And it seems like it is normally distributed.
+
 
 ```{r}
 # UFC event per year
 library(lubridate)
 
 data_df$date <- ymd(data_df$date)
-
-
-ggplot(data_df, aes(x = year(date))) +
-  geom_bar(fill = "purple2", color = "black") +
-  theme_minimal() +
-  labs(title = "UFC Events per Year", x = "Year", y = "Count")
 
 
 ```
@@ -261,6 +288,8 @@ ggplot(preprocessed_data_df, aes(x = R_age)) +
   theme_minimal()
 ```
 
+The graph above shows the distribution of the age of red fighters. The graph shows that the age of red fighters is between 28 and 32 years old. The graph also shows that the age of red fighters is normally distributed.
+
 ```{r}
 
 # Distribution of age, Blue
@@ -270,16 +299,8 @@ ggplot(preprocessed_data_df, aes(x = B_age)) +
   theme_minimal()
 ```
 
-```{r}
+The graph above shows the distribution of the age of blue fighters. The graph shows that the age of blue fighters is between 28 and 32 years old. The graph also shows that the age of blue fighters is normally distributed.
 
-# UFC fight out by Division
-
-ggplot(raw_total_fight_df, aes(x= Fight_type, fill = win_by)) +
-  geom_bar() +
-  theme_minimal() +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
-  labs(title = "UFC Fight Outcome by Division", x = "Division", y = "Count")
-```
 
 ```{r}
 preprocessed_data_df |>
@@ -296,6 +317,19 @@ preprocessed_data_df |>
                         B_win_by_Submission,
                         B_win_by_TKO_Doctor_Stoppage),
                names_to = "Win_by", values_to = "Count") |>
+  mutate(Win_by = recode(Win_by,
+                         "R_win_by_Decision_Majority" = "Decision_Majority",
+                         "R_win_by_Decision_Split" = "Decision_Split",
+                         "R_win_by_Decision_Unanimous" = "Decision_Unanimous",
+                         "R_win_by_KO/TKO" = "KO/TKO",
+                         "R_win_by_Submission" = "Submission",
+                         "R_win_by_TKO_Doctor_Stoppage" = "TKO_Doctor_Stoppage",
+                         "B_win_by_Decision_Majority" = "Decision_Majority",
+                         "B_win_by_Decision_Split" = "Decision_Split",
+                         "B_win_by_Decision_Unanimous" = "Decision_Unanimous",
+                         "B_win_by_KO/TKO" = "KO/TKO",
+                         "B_win_by_Submission" = "Submission",
+                         "B_win_by_TKO_Doctor_Stoppage" = "TKO_Doctor_Stoppage")) |>
   pivot_longer(cols = c(weight_class_Bantamweight,
                         weight_class_CatchWeight,
                         weight_class_Featherweight,
@@ -318,6 +352,9 @@ preprocessed_data_df |>
   labs(title = "UFC Fight Outcome by Division", x = "Division", y = "Count") 
 
 ```
+
+The graph above shows the UFC fight outcome by division. The graph shows that the UFC fight outcome is mostly by KO/TKO and Decision Unanimous. The graph also shows that the UFC fight outcome is mostly in the Lightweight division.
+
 
 ```{r}
 # UFC fight outcome over the years
@@ -345,6 +382,8 @@ data_df |>
 
 
 ```
+
+The graph above shows the UFC fight outcome over the years. The graph shows that the UFC fight outcome is mostly by KO/TKO and Decision Unanimous. 
 
 ```{r}
 # Line graph instead of bar graph
@@ -374,6 +413,9 @@ data_df |>
 
 ```
 
+The graph above shows the UFC fight outcome over the years. The graph shows that the UFC fight outcome is mostly by KO/TKO and Decision Unanimous. 
+
+
 ```{r}
 
 data_df |>
@@ -391,6 +433,9 @@ data_df |>
 
 
 ```
+
+The graph above shows the UFC fighter stance popularity over the years. The graph shows that the UFC fighter stance popularity is mostly Orthodox and Southpaw. 
+
 
 # Shiny app
 
@@ -532,86 +577,7 @@ shinyApp(ui, server)
 ```
 
 
-# Next possible steps
-# Modelling?
-# Map ?
-# More interactivity?
-# Fighterwise comparison?
-
-# Logistic regression to predict fight outcomes
-
-```{r}
-# Logistic regression to predict fight outcomes
-
-modified_df <- data_df |> 
-  select(R_fighter, B_fighter, Winner, R_avg_SIG_STR_landed, B_avg_SIG_STR_landed, 
-         R_avg_TD_landed, B_avg_TD_landed, R_avg_SIG_STR_pct, B_avg_SIG_STR_pct, 
-         R_avg_TD_pct, B_avg_TD_pct, R_avg_SUB_ATT, B_avg_SUB_ATT, 
-         R_avg_REV, B_avg_REV, R_avg_SIG_STR_att, B_avg_SIG_STR_att, 
-         R_avg_TD_att, B_avg_TD_att, R_avg_TOTAL_STR_att, B_avg_TOTAL_STR_att, 
-         R_avg_TD_landed, B_avg_TD_landed, R_avg_TOTAL_STR_landed, B_avg_TOTAL_STR_landed, 
-         R_avg_opp_SIG_STR_landed, B_avg_opp_SIG_STR_landed, R_avg_opp_SIG_STR_att, 
-         B_avg_opp_SIG_STR_att, R_avg_opp_TD_landed, B_avg_opp_TD_landed, 
-         R_avg_opp_TD_att, B_avg_opp_TD_att, R_avg_opp_TOTAL_STR_landed, 
-         B_avg_opp_TOTAL_STR_landed, R_avg_opp_TOTAL_STR_att, B_avg_opp_TOTAL_STR_att, 
-         R_avg_opp_TD_pct, B_avg_opp_TD_pct, R_avg_opp_SIG_STR_pct, B_avg_opp_SIG_STR_pct, 
-         R_avg_opp_SUB_ATT, B_avg_opp_SUB_ATT, R_avg_opp_REV, B_avg_opp_REV) |>
-  mutate(R_win = if_else(Winner == "Red", 1, 0)) |>
-  select(-Winner) |>
-  mutate(R_win = as.factor(R_win)) |>
-  pivot_longer(cols = c(R_avg_SIG_STR_landed, B_avg_SIG_STR_landed, 
-                        R_avg_TD_landed, B_avg_TD_landed, 
-                        R_avg_SIG_STR_pct, B_avg_SIG_STR_pct, 
-                        R_avg_TD_pct, B_avg_TD_pct, 
-                        R_avg_SUB_ATT, B_avg_SUB_ATT, 
-                        R_avg_REV, B_avg_REV, 
-                        R_avg_SIG_STR_att, B_avg_SIG_STR_att, 
-                        R_avg_TD_att, B_avg_TD_att, 
-                        R_avg_TOTAL_STR_att, B_avg_TOTAL_STR_att, 
-                        R_avg_TD_landed, B_avg_TD_landed,
-                        R_avg_TOTAL_STR_landed, B_avg_TOTAL_STR_landed,
-                        R_avg_opp_SIG_STR_landed, B_avg_opp_SIG_STR_landed,
-                        R_avg_opp_SIG_STR_att, B_avg_opp_SIG_STR_att,
-                        R_avg_opp_TD_landed, B_avg_opp_TD_landed,
-                        R_avg_opp_TD_att, B_avg_opp_TD_att,
-                        R_avg_opp_TOTAL_STR_landed, B_avg_opp_TOTAL_STR_landed,
-                        R_avg_opp_TOTAL_STR_att, B_avg_opp_TOTAL_STR_att,
-                        R_avg_opp_TD_pct, B_avg_opp_TD_pct,
-                        R_avg_opp_SIG_STR_pct, B_avg_opp_SIG_STR_pct,
-                        R_avg_opp_SUB_ATT, B_avg_opp_SUB_ATT,
-                        R_avg_opp_REV, B_avg_opp_REV),
-               names_to = "Feature", values_to = "Value") |>
-  mutate(Feature = as.factor(Feature)) |>
-  filter(!is.na(Value))
-
-mod1 <- glm(R_win ~ Feature + Value, data = modified_df, family = "binomial")
-
-mod1 |> summary()
-```
-
-```{r}
-
-# try model with only significant strikes landed and takedowns landed
-
-modified_df <- data_df |> 
-  select(R_fighter, B_fighter, Winner, R_avg_SIG_STR_landed, B_avg_SIG_STR_landed, 
-         R_avg_TD_landed, B_avg_TD_landed) |>
-  mutate(R_win = if_else(Winner == "Red", 1, 0)) |>
-  select(-Winner) |>
-  mutate(R_win = as.factor(R_win)) |>
-  pivot_longer(cols = c(R_avg_SIG_STR_landed, B_avg_SIG_STR_landed, 
-                        R_avg_TD_landed, B_avg_TD_landed),
-               names_to = "Feature", values_to = "Value") |>
-  mutate(Feature = as.factor(Feature)) |>
-  filter(!is.na(Value))
-
-mod2 <- glm(R_win ~ Feature + Value, data = modified_df, family = "binomial")
-
-mod2 |> summary()
-```
-
-
-# map 
+# Map
 
 ```{r}
 ## install.packages("maps")
@@ -689,6 +655,9 @@ ggplot(data = world_full, aes(x = long, y = lat, group = group, fill = n)) +
   theme(legend.position = "bottom")
 ```
 
+The above map shows the number of UFC fights that have taken place in each country. The lighter the color, the more fights have taken place in that country. The United States has the highest number of fights, followed by Brazil and Canada.
+
+
 ```{r}
 # state level
 
@@ -722,6 +691,8 @@ ggplot(data = state_full, aes(x = long, y = lat, group = group, fill = n)) +
        fill = "Number of Fights") +
   theme(legend.position = "bottom")
 ```
+
+The above map shows the number of UFC fights that have taken place in each state. The lighter the color, the more fights have taken place in that state. The state of Nevada has the highest number of fights, followed by California and Florida. This is likely due to the fact that Las Vegas, Nevada is a popular location for UFC events. 
 
 ```{r}
 # city level
@@ -768,6 +739,8 @@ ggplot(data = usa, aes(x = long, y = lat, group = group)) +
        size = "Number of Fights")
 ```
 
+The above map shows the number of UFC fights that have taken place in each city in the United States. The size of the red dots represents the number of fights that have taken place in each city. Las Vegas, Nevada has the highest number of fights, followed by Los Angeles, California and Houston, Texas. This is consistent with the state-level map, as Las Vegas is a popular location for UFC events.
+
 
 # Shiny app for fighter wise comparison
 
@@ -775,35 +748,8 @@ ggplot(data = usa, aes(x = long, y = lat, group = group)) +
 # Library
 library(fmsb)
 
-# Create data: note in High school for several students
-set.seed(99)
-data <- as.data.frame(matrix( sample( 0:20 , 15 , replace=F) , ncol=5))
-colnames(data) <- c("math" , "english" , "biology" , "music" , "R-coding" )
-rownames(data) <- paste("mister" , letters[1:3] , sep="-")
-
-# To use the fmsb package, I have to add 2 lines to the dataframe: the max and min of each variable to show on the plot!
-data <- rbind(rep(20,5) , rep(0,5) , data)
-
-# Set graphic colors
-library(RColorBrewer)
-coul <- brewer.pal(3, "BuPu")
-colors_border <- coul
-library(scales)
-colors_in <- alpha(coul,0.3)
-
-# If you remove the 2 first lines, the function compute the max and min of each variable with the available data:
-radarchart(data[-c(1,2),]  , axistype=0 , maxmin=F,
-           #custom polygon
-           pcol=colors_border , pfcol=colors_in , plwd=4 , plty=1,
-           #custom the grid
-           cglcol="grey", cglty=1, axislabcol="black", cglwd=0.8, 
-           #custom labels
-           vlcex=0.8 
-)
-
-# Add a legend
-legend(x=0.7, y=1, legend = rownames(data[-c(1,2),]), bty = "n", pch=20 , col=colors_in , text.col = "grey", cex=1.2, pt.cex=3)
 ```
+
 
 ```{r}
 # Use same idea as previous example
