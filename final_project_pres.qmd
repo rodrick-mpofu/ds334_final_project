@@ -1,6 +1,7 @@
 ---
 title: "UFC Fight Data Analysis"
 author: "Rodrick Mpofu"
+date: "5/1/2024"
 format: 
   revealjs:
     theme: moon
@@ -20,7 +21,20 @@ raw_fighter_df <- read_csv("data/raw_fighter_details.csv")
 raw_total_fight_df <- read_delim("data/raw_total_fight_data.csv", delim = ";")
 ```
 
-## Distribution Weight Classes
+## Data Overview
+
+- The Ultimate Fighting Championship (UFC) is the largest mixed martial arts promotion company in the world featuring most of the top-ranked fighters in the sport.
+- The data contains information about UFC fights and fighters from 1993 to 2019.
+- There are 9 weight classes in the UFC over 12 divisions.
+
+## Questions to Answer
+
+1. What are the trends of different fighter statistics over time?
+2. What are the most common ways fighters win?
+3. Where are UFC fights most common?
+4. Allow users to compare two fighters and see their statistics side by side
+
+## Distribution of Weight Classes
 
 ```{r}
 
@@ -93,9 +107,8 @@ data_df$date <- ymd(data_df$date)
 
 ```{r}
 # Line graph instead of bar graph
-library(gganimate)
 
-year_trans <- data_df |> 
+data_df |> 
   pivot_longer(cols = c(R_win_by_Decision_Majority, 
                         R_win_by_Decision_Split, 
                         R_win_by_Decision_Unanimous, 
@@ -117,10 +130,7 @@ year_trans <- data_df |>
   ggplot(aes(x=year, y = Count, color = Win_by)) +
   geom_line() +
   labs(title = "UFC Fight Outcome Over the Years", x = "Year", y = "Count") +
-  theme_minimal(base_size = 20) +
-  transition_time(year)
-
-animate(year_trans)
+  theme_minimal(base_size = 20)
 
 ```
 
@@ -260,6 +270,8 @@ head(state_stat$State)
 ```{r}
 #| echo: false
 
+library(plotly)
+
 state_df <- ggplot2::map_data("state")
 
 state_stat <- state_stat |>
@@ -267,7 +279,10 @@ state_stat <- state_stat |>
 
 state_full <- left_join(state_df, state_stat, by = c("region" = "State"))
 
-ggplot(data = state_full, aes(x = long, y = lat, group = group, fill = n)) +
+ggplot(data = state_full, aes(x = long, y = lat, 
+                                       group = group, 
+                                       fill = n,
+                                       label = region)) +
   geom_polygon(color = "black") +
   coord_fixed(1.3) +
   theme_void() +
@@ -276,6 +291,8 @@ ggplot(data = state_full, aes(x = long, y = lat, group = group, fill = n)) +
        fill = "Number of Fights") +
   theme(legend.position = "bottom")
 ```
+
+
 
 
 ```{r}
@@ -332,12 +349,218 @@ usa <- map_data("usa")
 
 ggplot(data = usa, aes(x = long, y = lat, group = group)) +
   geom_polygon(color = "black", fill = "white") +
-  geom_point(data = city_full, aes(x = long, y = lat, size = n, group = NULL), color = "red") +
+  geom_point(data = city_full, aes(x = long, y = lat, size = n, group = NULL), 
+             color = "red") +
   coord_fixed(1.3) +
   theme_void() +
   labs(title = "Number of UFC Fights by City",
        size = "Number of Fights")
 ```
+
+## Stats trend per Fighter
+
+```{r}
+#| echo: false
+
+library(scales)
+
+fighter_data <- data_df |>
+      filter(R_fighter == "Conor McGregor"| B_fighter =="Conor McGregor") |>
+      mutate(Date = as.Date(date)) |>
+      select(Date, R_fighter, B_fighter,
+             R_avg_SIG_STR_landed, B_avg_SIG_STR_landed,
+             R_avg_TD_landed, B_avg_TD_landed,
+             `R_total_time_fought(seconds)`, `B_total_time_fought(seconds)`)
+    
+    fighter_stats <- fighter_data |>
+      mutate(SIG_STR_landed = if_else(R_fighter ==  "Conor McGregor",
+                                      R_avg_SIG_STR_landed, B_avg_SIG_STR_landed),
+             TD_landed = if_else(R_fighter == "Conor McGregor",
+                                 R_avg_TD_landed, B_avg_TD_landed),
+             Total_time_fought = if_else(
+               R_fighter ==  "Conor McGregor",
+               `R_total_time_fought(seconds)`, `B_total_time_fought(seconds)`)) |>
+      # Apply min-max scaling
+  mutate(across(c(SIG_STR_landed, TD_landed, Total_time_fought), ~ rescale(.x, to = c(0, 1))))
+    
+
+ ggplot(fighter_stats, aes(x = Date)) +
+      geom_line(aes(y = SIG_STR_landed, colour = "Significant Strikes Landed")) +
+      geom_line(aes(y = TD_landed, colour = "Takedowns Landed")) +
+      geom_line(aes(y = Total_time_fought, colour = "Total Time Fought")) +
+      labs(title = "Conor McGregor's Performance Over Time", x = "Date", y = "Normalized Stat Value") +
+      scale_color_manual(values = c("Significant Strikes Landed" = "blue", 
+                                    "Takedowns Landed" = "red", "Total Time Fought" = "green")) +
+      theme_minimal(base_size = 20)
+```
+
+## Comparison of Fighters
+
+```{r}
+#| echo: false
+
+# Compare fighters Jon Jones vs Francis Ngannou
+
+JonJ_df <- data_df %>%
+  filter(R_fighter == "Jon Jones" | B_fighter == "Jon Jones") %>%
+  mutate(fighter = if_else(R_fighter == "Jon Jones", R_fighter, B_fighter),
+         opponent = if_else(R_fighter == "Jon Jones", B_fighter, R_fighter),
+         avg_SIG_STR_landed = if_else(R_fighter == "Jon Jones", R_avg_SIG_STR_landed, B_avg_SIG_STR_landed),
+         avg_TD_landed = if_else(R_fighter == "Jon Jones", R_avg_TD_landed, B_avg_TD_landed),
+         avg_SUB_ATT = if_else(R_fighter == "Jon Jones", R_avg_SUB_ATT, B_avg_SUB_ATT),
+         avg_REV = if_else(R_fighter == "Jon Jones", R_avg_REV, B_avg_REV),
+         avg_SIG_STR_pct = if_else(R_fighter == "Jon Jones", R_avg_SIG_STR_pct, B_avg_SIG_STR_pct),
+         avg_TD_pct = if_else(R_fighter == "Jon Jones", R_avg_TD_pct, B_avg_TD_pct)) %>%
+  select(fighter, opponent, avg_SIG_STR_landed, avg_TD_landed, avg_SUB_ATT, avg_REV, avg_SIG_STR_pct, avg_TD_pct)
+
+# Select data for Francis Ngannou
+Ngannou_df <- data_df %>%
+  filter(R_fighter == "Francis Ngannou" | B_fighter == "Francis Ngannou") %>%
+  mutate(fighter = if_else(R_fighter == "Francis Ngannou", R_fighter, B_fighter),
+         opponent = if_else(R_fighter == "Francis Ngannou", B_fighter, R_fighter),
+         avg_SIG_STR_landed = if_else(R_fighter == "Francis Ngannou", R_avg_SIG_STR_landed, B_avg_SIG_STR_landed),
+         avg_TD_landed = if_else(R_fighter == "Francis Ngannou", R_avg_TD_landed, B_avg_TD_landed),
+         avg_SUB_ATT = if_else(R_fighter == "Francis Ngannou", R_avg_SUB_ATT, B_avg_SUB_ATT),
+         avg_REV = if_else(R_fighter == "Francis Ngannou", R_avg_REV, B_avg_REV),
+         avg_SIG_STR_pct = if_else(R_fighter == "Francis Ngannou", R_avg_SIG_STR_pct, B_avg_SIG_STR_pct),
+         avg_TD_pct = if_else(R_fighter == "Francis Ngannou", R_avg_TD_pct, B_avg_TD_pct)) %>%
+  select(fighter, opponent, avg_SIG_STR_landed, avg_TD_landed, avg_SUB_ATT, avg_REV, avg_SIG_STR_pct, avg_TD_pct)
+  
+combined_df <- bind_rows(JonJ_df ,
+                         Ngannou_df)
+
+
+fighter_full <- bind_rows(JonJ_df,
+                          Ngannou_df)
+
+# Drop NA values, group by fighter, and calculate means for each stat
+fighter_full <- fighter_full %>%
+  drop_na() %>%
+  group_by(fighter) %>%
+  summarise(
+    avg_SIG_STR_landed = mean(avg_SIG_STR_landed, na.rm = TRUE),
+    avg_TD_landed = mean(avg_TD_landed, na.rm = TRUE),
+    avg_SUB_ATT = mean(avg_SUB_ATT, na.rm = TRUE),
+    avg_REV = mean(avg_REV, na.rm = TRUE),
+    avg_SIG_STR_pct = mean(avg_SIG_STR_pct, na.rm = TRUE),
+    avg_TD_pct = mean(avg_TD_pct, na.rm = TRUE),
+    .groups = 'drop'  # Ensures the result is ungrouped
+  )
+
+# Pivot data to long format for plotting
+fighter_long <- fighter_full %>%
+  pivot_longer(cols = -fighter, names_to = "stat", values_to = "value")
+
+# Plotting the data using ggplot2, with facet wrap
+ggplot(fighter_long, aes(x = fighter, y = value, fill = fighter)) +
+  geom_bar(stat = "identity", position = "dodge", width = 0.7) +
+  facet_wrap(~stat, scales = "free_y") +  # Facet by statistic
+  labs(title = "Fighter Stats Comparison",
+       x = "",
+       y = "Average Value",
+       fill = "Fighter") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 0, hjust = 0.5),  # Adjust text alignment if needed
+        strip.background = element_blank(),
+        strip.text.x = element_text(size = 10))
+```
+
+## Radar chart Fighter comparison
+
+```{r}
+#| echo: false
+# lets do the same
+library(fmsb)
+
+IT_df <- data_df %>%
+  filter(R_fighter == "Ilia Topuria" | B_fighter == "Ilia Topuria") %>%
+  mutate(fighter = if_else(R_fighter == "Ilia Topuria", R_fighter, B_fighter),
+         opponent = if_else(R_fighter == "Ilia Topuria", B_fighter, R_fighter),
+         avg_SIG_STR_landed = if_else(R_fighter == "Ilia Topuria", R_avg_SIG_STR_landed, B_avg_SIG_STR_landed),
+         avg_TD_landed = if_else(R_fighter == "Ilia Topuria", R_avg_TD_landed, B_avg_TD_landed),
+         avg_SUB_ATT = if_else(R_fighter == "Ilia Topuria", R_avg_SUB_ATT, B_avg_SUB_ATT),
+         avg_REV = if_else(R_fighter == "Ilia Topuria", R_avg_REV, B_avg_REV),
+         avg_SIG_STR_pct = if_else(R_fighter == "Ilia Topuria", R_avg_SIG_STR_pct, B_avg_SIG_STR_pct),
+         avg_TD_pct = if_else(R_fighter == "Ilia Topuria", R_avg_TD_pct, B_avg_TD_pct)) %>%
+  select(fighter, opponent, avg_SIG_STR_landed, avg_TD_landed, avg_SUB_ATT, avg_REV, avg_SIG_STR_pct, avg_TD_pct)
+
+Conor_df <- data_df %>%
+  filter(R_fighter == "Conor McGregor" | B_fighter == "Conor McGregor") %>%
+  mutate(fighter = if_else(R_fighter == "Conor McGregor", R_fighter, B_fighter),
+         opponent = if_else(R_fighter == "Conor McGregor", B_fighter, R_fighter),
+         avg_SIG_STR_landed = if_else(R_fighter == "Conor McGregor", R_avg_SIG_STR_landed, B_avg_SIG_STR_landed),
+         avg_TD_landed = if_else(R_fighter == "Conor McGregor", R_avg_TD_landed, B_avg_TD_landed),
+         avg_SUB_ATT = if_else(R_fighter == "Conor McGregor", R_avg_SUB_ATT, B_avg_SUB_ATT),
+         avg_REV = if_else(R_fighter == "Conor McGregor", R_avg_REV, B_avg_REV),
+         avg_SIG_STR_pct = if_else(R_fighter == "Conor McGregor", R_avg_SIG_STR_pct, B_avg_SIG_STR_pct),
+         avg_TD_pct = if_else(R_fighter == "Conor McGregor", R_avg_TD_pct, B_avg_TD_pct)) %>%
+  select(fighter, opponent, avg_SIG_STR_landed, avg_TD_landed, avg_SUB_ATT, avg_REV, avg_SIG_STR_pct, avg_TD_pct)
+
+fighter_full <- rbind(IT_df, Conor_df) |>
+  drop_na()
+
+# Calculate average values for each statistic
+fighter_avg <- fighter_full %>%
+  group_by(fighter) %>%
+  summarise(avg_SIG_STR_landed = mean(avg_SIG_STR_landed),
+            avg_TD_landed = mean(avg_TD_landed),
+            avg_SUB_ATT = mean(avg_SUB_ATT),
+            avg_REV = mean(avg_REV),
+            avg_SIG_STR_pct = mean(avg_SIG_STR_pct),
+            avg_TD_pct = mean(avg_TD_pct),
+            .groups = 'drop'  # Ensures the result is ungrouped
+  )
+
+# remove the fighter column
+fighter_avg <- fighter_avg %>%
+  select(-fighter)
+
+# fighter_avg as data frame
+fighter_avg_df <- as.data.frame(fighter_avg)
+
+rownames(fighter_avg_df) <- c("Conor McGregor", "Ilia Topuria")
+
+# Calculate max and min values for each column
+max_vals <-fighter_avg_df |> summarise_all(max)
+min_vals <- fighter_avg_df |> summarise_all(min)
+
+# Add max and min values to the data frame
+fighter_avg_df <- rbind(max_vals, min_vals, fighter_avg_df)
+
+
+colors_border = c(ggplot2::alpha("blue", 0.2), ggplot2::alpha("red", 0.2))
+colors_in = c(ggplot2::alpha("blue", 0.5), ggplot2::alpha("red", 0.5))
+
+radarchart(fighter_avg_df, axistype = 1, 
+           #custom polygon
+           pcol = colors_border, pfcol = colors_in, plwd = 4, plty = 1,
+           #custom the grid
+           cglcol = "grey", cglty = 1, axislabcol = "grey", caxislabels = seq(0, 20, 5), cglwd = 0.8,
+           #custom labels
+           vlcex = 0.8
+           )
+# Add a legend
+legend("topright", 
+       legend = rownames(fighter_avg_df[-c(1, 2),]),
+       fill = colors_in,
+       border = colors_border,
+       bty = "n",
+       cex = 0.8, 
+       title = "Fighter")
+
+
+```
+
+
+
+## Conclusion
+
+- In this analysis, we explored the UFC fight data and visualized the performance of fighters over time. 
+- We also compared the stats of two fighters, Jon Jones and Francis Ngannou. 
+- This analysis provides insights into the performance of fighters in the UFC based on various statistics such as:
+  - significant strikes landed, 
+  - takedowns landed, 
+  - submission attempts
 
 
 
