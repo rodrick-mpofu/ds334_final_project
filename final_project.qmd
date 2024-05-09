@@ -15,77 +15,6 @@ raw_fighter_df <- read_csv("data/raw_fighter_details.csv")
 raw_total_fight_df <- read_delim("data/raw_total_fight_data.csv", delim = ";")
 ```
 
-# Introduction
-
-The Ultimate Fighting Championship (UFC) is the largest mixed martial arts promotion company in the world featuring most of the top-ranked fighters in the sport. The organization showcases nine weight divisions and enforces the Unified Rules of Mixed Martial Arts. The UFC produces events worldwide that showcase twelve weight divisions and abide by the Unified Rules of Mixed Martial Arts.This project aims to analyze the UFC data to provide insights into the fighters and fights. The data was obtained from [Kaggle](https://www.kaggle.com/datasets/rajeevw/ufcdata/data) and contains information on fighters, fights, and preprocessed data.
-
-# Data Description
-
-## The data contains the following columns:
-
--   `R_` and `B_` prefix signifies red and blue corner fighter stats respectively
--   `_opp_` containing columns is the average of damage done by the opponent on the fighter
--   `KD` is number of knockdowns
--   `SIG_STR` is no. of significant strikes 'landed of attempted'
--   `SIG_STR_pct` is significant strikes percentage
--   `TOTAL_STR` is total strikes 'landed of attempted'
--   `TD` is no. of takedowns
--   `TD_pct` is takedown percentages
--   `SUB_ATT` is no. of submission attempts
--   `PASS` is no. times the guard was passed?
--   `REV` is the no. of Reversals landed
--   `HEAD` is no. of significant strinks to the head 'landed of attempted'
--   `BODY` is no. of significant strikes to the body 'landed of attempted'
--   `CLINCH` is no. of significant strikes in the clinch 'landed of attempted'
--   `GROUND` is no. of significant strikes on the ground 'landed of attempted'
--   `win_by` is method of win
--   `last_round` is last round of the fight (ex. if it was a KO in 1st, then this will be 1)
--   `last_round_time` is when the fight ended in the last round
--   `Format` is the format of the fight (3 rounds, 5 rounds etc.)
--   `Referee` is the name of the Ref
--   `date` is the date of the fight
--   `location` is the location in which the event took place
--   `Fight_type` is which weight class and whether it's a title bout or not
--   `Winner` is the winner of the fight
--   `Stance` is the stance of the fighter (orthodox, southpaw, etc.)
--   `Height_cms` is the height in centimeter
--   `Reach_cms` is the reach of the fighter (arm span) in centimeter
--   `Weight_lbs` is the weight of the fighter in pounds (lbs)
--   `age` is the age of the fighter
--   `title_bout` Boolean value of whether it is title fight or not
--   `weight_class` is which weight class the fight is in (Bantamweight, heavyweight, Women's flyweight, etc.)
--   `no_of_rounds` is the number of rounds the fight was scheduled for
--   `current_lose_streak` is the count of current concurrent losses of the fighter
--   `current_win_streak` is the count of current concurrent wins of the fighter
--   `draw` is the number of draws in the fighter's ufc career
--   `wins` is the number of wins in the fighter's ufc career
--   `losses` is the number of losses in the fighter's ufc career
--   `total_rounds_fought` is the average of total rounds fought by the fighter
--   `total_time_fought(seconds)` is the count of total time spent fighting in seconds
--   `total_title_bouts` is the total number of title bouts taken part in by the fighter
--   `win_by_Decision_Majority` is the number of wins by majority judges decision in the fighter's ufc career
--   `win_by_Decision_Split` is the number of wins by split judges decision in the fighter's ufc career
--   `win_by_Decision_Unanimous` is the number of wins by unanimous judges decision in the fighter's ufc career
--   `win_by_KO/TKO` is the number of wins by knockout in the fighter's ufc career
--   `win_by_Submission` is the number of wins by submission in the fighter's ufc career
--   `win_by_TKO_Doctor_Stoppage` is the number of wins by doctor stoppage in the fighter's ufc career
-
-The questions that will be answered in this project are:
-
-1.  What are the weight classes in the UFC?
-2.  What are the fighting stances in the UFC?
-3.  What are the most common ways to win a fight?
-4.  What are the most common ways to lose a fight?
-5.  What are the most common ways to win a fight by decision?
-6.  What are the most common ways to win a fight by knockout?
-7.  What are the most common ways to win a fight by submission?
-8.  What are the most common ways to win a fight by doctor stoppage?
-9.  What are the most common ways to win a fight by split decision?
-
-And the shiny app will provide the following functionalities:
-
-1. Show the trends of different fighter statistics over time
-2. Allow users to compare two fighters and see their statistics side by side
 
 # Data Exploration
 
@@ -438,145 +367,6 @@ The graph above shows the UFC fighter stance popularity over the years. The grap
 
 
 # Shiny app
-
-```{r}
-
-# table of fighters
-
-data_df |> 
-  pivot_longer(cols = c(R_fighter, B_fighter), 
-               names_to = "Fighter_Name", 
-               values_to = "Fighter") |>
-  filter(!is.na(Fighter)) 
-
-```
-
-```{r}
-colnames(data_df)
-```
-
-```{r}
-
-# Filter data for a specific fighter
-fighter_data <- data_df |> 
-  filter(R_fighter == "Conor McGregor" | B_fighter == "Conor McGregor") |>
-  mutate(Date = as.Date(date)) |>
-  select(Date, R_fighter, B_fighter, R_avg_SIG_STR_landed, B_avg_SIG_STR_landed, 
-         R_avg_TD_landed, B_avg_TD_landed, `R_total_time_fought(seconds)`, `B_total_time_fought(seconds)`)
-
-```
-
-```{r}
-library(shiny)
-library(shinythemes)
-
-choices_R <- data_df |>
-  pull(R_fighter) |>
-  unique()
-
-choices_B <- data_df |>
-  pull(B_fighter) |>
-  unique()
-
-choices <- union(choices_R, choices_B)
-
-weights <- data_df |>
-  pull(weight_class) |>
-  unique()
-
-ui <- fluidPage(
-  theme = shinytheme("darkly"),
-  titlePanel("Fighter Statistics Over Time"),
-  sidebarLayout(
-    sidebarPanel(
-      selectInput("selectedFighter", "Select a Fighter",
-                  choices = choices),
-      radioButtons("selectedWeight", "Select a Weight Class",
-                   choices = weights)
-    ),
-    mainPanel(
-      tabsetPanel(
-        tabPanel("Statistics Plot", plotOutput("statsPlot")),
-        tabPanel("Data Table", dataTableOutput("table"))
-      )
-    )
-  )
-)
-
-```
-
-```{r}
-server <- function(input, output) {
-  
-  observeEvent(input$selectedWeight, {
-    
-    choices <- data_df |>
-      filter(weight_class == input$selectedWeight) |>
-      distinct(R_fighter, B_fighter) |>
-      pull(R_fighter, B_fighter)
-    
-    updateSelectInput(inputId = "selectedFighter", choices = choices)
-    
-    
-  })
-  
-  ufc_reactive <- reactive({
-    
-    # Filter data for a specific fighter
-    fighter_data <- data_df |> 
-      filter(R_fighter == input$selectedFighter | B_fighter == input$selectedFighter) |>
-      mutate(Date = as.Date(date)) |>
-      select(Date, R_fighter, B_fighter, 
-             R_avg_SIG_STR_landed, B_avg_SIG_STR_landed, 
-             R_avg_TD_landed, B_avg_TD_landed, 
-             `R_total_time_fought(seconds)`, `B_total_time_fought(seconds)`)
-    
-    
-    # Determine which corner the fighter was in and select the correct stats
-    fighter_stats <- fighter_data |>
-      mutate(SIG_STR_landed = if_else(R_fighter == input$selectedFighter, 
-                                      R_avg_SIG_STR_landed, B_avg_SIG_STR_landed),
-             TD_landed = if_else(R_fighter == input$selectedFighter, 
-                                 R_avg_TD_landed, B_avg_TD_landed),
-             Total_time_fought = if_else(
-               R_fighter == input$selectedFighter, 
-               `R_total_time_fought(seconds)`, `B_total_time_fought(seconds)`))
-    
-  })
-  
-  
-  output$statsPlot <- renderPlot({
-    
-    
-    # Plotting
-    ggplot(ufc_reactive(), aes(x = Date)) +
-      geom_line(aes(y = SIG_STR_landed, colour = "Significant Strikes Landed")) +
-      geom_line(aes(y = TD_landed, colour = "Takedowns Landed")) +
-      geom_line(aes(y = Total_time_fought, colour = "Total Time Fought")) +
-      labs(title = glue::glue(input$selectedFighter, " Performance Over Time"), x = "Date", y = "Stat Value") +
-      scale_color_manual(values = c("Significant Strikes Landed" = "blue", 
-                                    "Takedowns Landed" = "red", "Total Time Fought" = "green")) +
-      theme_minimal()
-  })
-  
-  output$table <- renderDataTable({
-    data_df |>
-      filter(weight_class == input$selectedWeight) |>
-      mutate(Date = as.Date(date)) |>
-      select(Date, R_fighter, B_fighter, 
-             R_avg_SIG_STR_landed, B_avg_SIG_STR_landed, 
-             R_avg_TD_landed, B_avg_TD_landed, 
-             `R_total_time_fought(seconds)`, `B_total_time_fought(seconds)`)
-  })
-}
-
-```
-
-```{r}
-shinyApp(ui, server)
-```
-
-
 # Map
 
 ```{r}
@@ -742,270 +532,6 @@ ggplot(data = usa, aes(x = long, y = lat, group = group)) +
 The above map shows the number of UFC fights that have taken place in each city in the United States. The size of the red dots represents the number of fights that have taken place in each city. Las Vegas, Nevada has the highest number of fights, followed by Los Angeles, California and Houston, Texas. This is consistent with the state-level map, as Las Vegas is a popular location for UFC events.
 
 
-# Shiny app for fighter wise comparison
-
-```{r}
-# Library
-library(fmsb)
-
-```
-
-
-```{r}
-# Use same idea as previous example
-# Compare the stats of two fighters
-
-# Create data
-
-f1 <- data_df |>
-  select(R_fighter, R_avg_SIG_STR_landed, 
-         R_avg_TD_landed, R_avg_SUB_ATT, R_avg_REV, 
-         R_avg_SIG_STR_pct, R_avg_TD_pct) |>
-  rename(fighter = R_fighter,
-         avg_SIG_STR_landed = R_avg_SIG_STR_landed,
-         avg_TD_landed = R_avg_TD_landed,
-         avg_SUB_ATT = R_avg_SUB_ATT,
-         avg_REV = R_avg_REV,
-         avg_SIG_STR_pct = R_avg_SIG_STR_pct,
-         avg_TD_pct = R_avg_TD_pct)
-
-
-
-f2 <- data_df |>
-  select(B_fighter, B_avg_SIG_STR_landed, 
-         B_avg_TD_landed, B_avg_SUB_ATT, B_avg_REV, B_avg_SIG_STR_pct, B_avg_TD_pct) |>
-  rename(fighter = B_fighter,
-         avg_SIG_STR_landed = B_avg_SIG_STR_landed,
-         avg_TD_landed = B_avg_TD_landed,
-         avg_SUB_ATT = B_avg_SUB_ATT,
-         avg_REV = B_avg_REV,
-         avg_SIG_STR_pct = B_avg_SIG_STR_pct,
-         avg_TD_pct = B_avg_TD_pct)
-
-# bind the two dataframes
-
-fighter_full <- bind_rows(f1, f2)
-
-```
-
-```{r}
-
-fighter_full <- fighter_full |>
-  drop_na() |>
-  group_by(fighter) |>
-  summarise(avg_SIG_STR_landed = mean(avg_SIG_STR_landed),
-            avg_TD_landed = mean(avg_TD_landed),
-            avg_SUB_ATT = mean(avg_SUB_ATT),
-            avg_REV = mean(avg_REV),
-            avg_SIG_STR_pct = mean(avg_SIG_STR_pct),
-            avg_TD_pct = mean(avg_TD_pct))
-```
-
-```{r}
-# side by side bar plot for two fighters
-
-fighter_full |>
-  filter(fighter %in% c("Conor McGregor", "Khabib Nurmagomedov")) |>
-  pivot_longer(cols = -fighter, names_to = "stat", values_to = "value") |>
-  ggplot(aes(x = stat, y = value, fill = fighter)) +
-  geom_bar(stat = "identity", position = "dodge") +
-  labs(title = "Fighter Stats Comparison",
-       x = "Fighter",
-       y = "Value",
-       fill = "Stat") +
-  theme_minimal()
-```
-
-```{r}
-
-
-```
-
-
-```{r}
-
-max_values <- fighter_full |>
-  select(-fighter) |>
-  summarise_all(max)
-
-min_values <- fighter_full |>
-  select(-fighter) |>
-  summarise_all(min)
-
-fighter_full <- bind_rows(max_values, min_values, fighter_full)
-
-# Set graphic colors
-library(RColorBrewer)
-coul <- brewer.pal(2, "Accent")
-colors_border <- coul
-library(scales)
-colors_in <- alpha(coul,0.3)
-
-
-# choose two fighters to compare
-
-fighter_comp <- fighter_full |>
-  filter(fighter %in% c("Conor McGregor", "Khabib Nurmagomedov"))
-
-# Create the radar chart data frame
-# First, find the max of each column for normalization
-max_values <- apply(fighter_comp[, 1:6], 2, max)  # Ignoring the 'fighter' column
-# Create a row for min values (using 0 or small values if negative not possible)
-min_values <- apply(fighter_comp[, 1:6], 2, function(x) min(x) - (max(x) * 0.1))
-
-# Combine the min and max values to normalize the data properly
-radar_data <- rbind(max_values, min_values, fighter_comp[1:6])
-
-#radar_data <- radar_data |> mutate(fighter = c("1", "2", fighter_comp$fighter))
-
-```
-
-```{r}
-
-# plot with default options:
-radarchart(radar_data, axistype=0, 
-           maxmin=T,
-           #custom polygon
-           pcol=colors_border , 
-           pfcol=colors_in , 
-           plwd=4 , plty=1,
-           #custom the grid
-           cglcol="grey", cglty=1, 
-           axislabcol="black", cglwd=0.8,
-           #custom labels
-           vlcex=0.6)
-
-# Add a legend
-# Make sure the colors are the same as the radar chart and match the order
-legend(x= -1, 
-       y=-1.2,  
-       legend = c("Conor McGregor", "Khabib Nurmagomedov"), 
-       bty = "n", pch=20 , col=colors_border , 
-       text.col = "black", cex=1.2, pt.cex=3)
-```
-
-```{r}
-library(shiny)
-
-ui <- fluidPage(
-  titlePanel("UFC Fighter Comparison"),
-  sidebarLayout(
-    sidebarPanel(
-      selectInput("fighter1", "Fighter 1", choices = unique(data_df$R_fighter)),
-      selectInput("fighter2", "Fighter 2", choices = unique(data_df$R_fighter)),
-      actionButton("submit", "Submit")
-    ),
-    mainPanel(
-      plotOutput("plot")
-    )
-  )
-)
-
-server <- function(input, output) {
-  
-  fighter1 <- reactive({
-    data_df |>
-      filter(R_fighter == input$fighter1) |>
-      select(R_fighter, R_avg_SIG_STR_landed, 
-             R_avg_TD_landed, R_avg_SUB_ATT, R_avg_REV, 
-             R_avg_SIG_STR_pct, R_avg_TD_pct) |>
-      rename(fighter = R_fighter,
-             avg_SIG_STR_landed = R_avg_SIG_STR_landed,
-             avg_TD_landed = R_avg_TD_landed,
-             avg_SUB_ATT = R_avg_SUB_ATT,
-             avg_REV = R_avg_REV,
-             avg_SIG_STR_pct = R_avg_SIG_STR_pct,
-             avg_TD_pct = R_avg_TD_pct)
-  })
-  
-  fighter2 <- reactive({
-    data_df |>
-      filter(B_fighter == input$fighter2) |>
-      select(B_fighter, B_avg_SIG_STR_landed, 
-             B_avg_TD_landed, B_avg_SUB_ATT, B_avg_REV, B_avg_SIG_STR_pct, B_avg_TD_pct) |>
-      rename(fighter = B_fighter,
-             avg_SIG_STR_landed = B_avg_SIG_STR_landed,
-             avg_TD_landed = B_avg_TD_landed,
-             avg_SUB_ATT = B_avg_SUB_ATT,
-             avg_REV = B_avg_REV,
-             avg_SIG_STR_pct = B_avg_SIG_STR_pct,
-             avg_TD_pct = B_avg_TD_pct)
-  })
-  
-  fighter_full_df <- reactive({
-    
-    fighter_full <- bind_rows(fighter1(), fighter2())
-    
-    fighter_full <- fighter_full |>
-      drop_na() |>
-      group_by(fighter) |>
-      summarise(avg_SIG_STR_landed = mean(avg_SIG_STR_landed),
-                avg_TD_landed = mean(avg_TD_landed),
-                avg_SUB_ATT = mean(avg_SUB_ATT),
-                avg_REV = mean(avg_REV),
-                avg_SIG_STR_pct = mean(avg_SIG_STR_pct),
-                avg_TD_pct = mean(avg_TD_pct))
-    
-    max_values <- fighter_full |>
-      select(-fighter) |>
-      summarise_all(max)
-    
-    min_values <- fighter_full |>
-      select(-fighter) |>
-      summarise_all(min)
-    
-    fighter_full <- bind_rows(max_values, min_values, fighter_full)
-    
-    # choose two fighters to compare
-    
-    fighter_comp <- fighter_full |>
-      filter(fighter %in% c(input$fighter1, input$fighter2))
-    
-    # Create the radar chart data frame
-    # First, find the max of each column for normalization
-    max_values <- apply(fighter_comp[, 1:6], 2, max)  # Ignoring the 'fighter' column
-    # Create a row for min values (using 0 or small values if negative not possible)
-    min_values <- apply(fighter_comp[, 1:6], 2, function(x) min(x) - (max(x) * 0.1))
-    
-    # Combine the min and max values to normalize the data properly
-    radar_data <- rbind(max_values, min_values, fighter_comp[1:6])
-    
-    
-  })
-  
-  
-  
-  output$plot <- renderPlot({
-    if(input$submit == 0) {
-      return("Please select two fighters and click submit")
-    }
-    
-    # Set graphic colors
-    library(RColorBrewer)
-    coul <- brewer.pal(3, "Accent")
-    colors_border <- coul
-    library(scales)
-    colors_in <- alpha(coul,0.3)
-    
-    
-    # plot with default options:
-    radarchart(fighter_full_df(), axistype=0, 
-               maxmin=T,
-               #custom polygon
-               pcol=colors_border , 
-               pfcol=colors_in , 
-               plwd=4 , plty=1,
-               #custom the grid
-               cglcol="grey", cglty=1, 
-               axislabcol="black", cglwd=0.8,
-               #custom labels
-               vlcex=0.6)
-  })
-  
-}
-
-shinyApp(ui = ui, server = server)
-```
 
 
 # Combined shiny app
@@ -1091,7 +617,8 @@ server <- function(input, output, session) {
                                  R_avg_TD_landed, B_avg_TD_landed),
              Total_time_fought = if_else(
                R_fighter == input$selectedFighter,
-               `R_total_time_fought(seconds)`, `B_total_time_fought(seconds)`))
+               `R_total_time_fought(seconds)`, `B_total_time_fought(seconds)`)) |>
+      mutate(across(c(SIG_STR_landed, TD_landed, Total_time_fought), ~ rescale(.x, to = c(0, 1))))
   })
   
   output$statsPlot <- renderPlot({
@@ -1181,13 +708,20 @@ server <- function(input, output, session) {
     # Create a row for min values (using 0 or small values if negative not possible)
     min_values <- apply(fighter_comp[, 1:6], 2, function(x) min(x) - (max(x) * 0.1))
     
+    fighter_comp_2 <- fighter_comp |>
+      select(-fighter)
+    
+    fighter_comp_df <- as.data.frame(fighter_comp_2)
+    
+    rownames(fighter_comp_df) <- c(input$fighter1, input$fighter2)
+    
     # Combine the min and max values to normalize the data properly
-    radar_data <- rbind(max_values, min_values, fighter_comp[1:6])
+    radar_data <- rbind(max_values, min_values, fighter_comp_df)
     
     
   })
   
-  output$plot <- renderPlot({
+  output$plot2 <- renderPlot({
     if(input$submit == 0) {
       return("Please select two fighters and click submit")
     }
@@ -1200,21 +734,29 @@ server <- function(input, output, session) {
     colors_in <- alpha(coul,0.3)
     
     
-    # plot with default options:
-    radarchart(fighter_full_df(), axistype=0, 
-               maxmin=T,
+    
+    radarchart(fighter_full_df(),
+               axistype = 5, 
                #custom polygon
-               pcol=colors_border , 
-               pfcol=colors_in , 
-               plwd=4 , plty=1,
+               pcol = colors_border, pfcol = 
+                 colors_in, plwd = 4, plty = 1,
                #custom the grid
-               cglcol="grey", cglty=1, 
-               axislabcol="black", cglwd=0.8,
+               cglcol = "grey", cglty = 1, axislabcol = "black", 
+               caxislabels = seq(0, 20, 5), cglwd = 0.8,
                #custom labels
-               vlcex=0.6)
+               vlcex = 0.8
+    )
+    # Add a legend
+    legend("topright", 
+           legend = rownames(fighter_full_df()[-c(1, 2),]),
+           fill = colors_in,
+           border = colors_border,
+           bty = "n",
+           cex = 0.8, 
+           title = "Fighter")
   })
   
-  output$plot2 <- renderPlot({
+  output$plot <- renderPlot({
     # side by side bar plot instead of radar chart
     fighter_full <- bind_rows(fighter1(), fighter2())
     
@@ -1232,13 +774,26 @@ server <- function(input, output, session) {
     fighter_full |>
       filter(fighter %in% c(input$fighter1, input$fighter2)) |>
       pivot_longer(cols = -fighter, names_to = "stat", values_to = "value") |>
-      ggplot(aes(x = stat, y = value, fill = fighter)) +
-      geom_bar(stat = "identity", position = "dodge") +
-      labs(title = "Fighter Stats Comparison",
-           x = "Fighter",
-           y = "Value",
-           fill = "Stat") +
-      theme_minimal()
+      ggplot(aes(x = fighter, y = value, fill = fighter)) +
+      geom_segment(aes(xend = fighter, yend = 0), 
+                   color = 
+                     "black") +
+      geom_point(stat = 
+                   "identity",
+                 position = position_dodge(width = 0.5), size = 3, aes(color = fighter)) +
+      facet_wrap(~stat,
+                 scales = "free_y") +
+      labs(title = "Fighter Stats",
+           x = "Stat",
+           y = "Value") +
+      theme_minimal() +
+      theme(axis.text.x = 
+              element_text(
+                angle = 0, hjust = 0.5),  
+            strip.background = 
+              element_blank(),
+            strip.text.x = 
+              element_text(size = 10))
     
   })
   
