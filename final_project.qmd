@@ -367,7 +367,7 @@ The graph above shows the UFC fighter stance popularity over the years. The grap
 
 
 # Shiny app
-# Map
+# Map of the world showing the number of fights that have taken place in each countr
 
 ```{r}
 ## install.packages("maps")
